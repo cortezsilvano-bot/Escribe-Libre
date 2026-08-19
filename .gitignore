@@ -1,0 +1,13 @@
+.next/
+node_modules/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+src-tauri/target/
+src-tauri/resources/
+*.tsbuildinfo
+.env
+.env*.local
+_analysis_pdf_text/
