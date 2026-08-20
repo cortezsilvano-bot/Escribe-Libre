@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { Building2 } from "lucide-react";
+
+export function SiteFooter({ appName }: { appName: string }) {
+  return <footer className="site-footer"><div className="container footer-grid"><div><Link className="brand brand-footer" href="/"><span className="brand-mark"><Building2 size={22} /></span>{appName}</Link><p>A verified-rental discovery and lead-routing marketplace. We are not a broker, screening company, escrow service, or payment custodian.</p><small>All inventory in local demo mode is synthetic and not available for rent.</small></div><div><strong>Renters</strong><Link href="/search">Search</Link><Link href="/compare">Compare</Link><Link href="/saved-searches">Saved searches</Link><Link href="/safety">Safety</Link></div><div><strong>Providers</strong><Link href="/provider/onboarding">Get started</Link><Link href="/provider/listings">Listings</Link><Link href="/pricing">Pricing</Link><Link href="/help">Help center</Link></div><div><strong>Company</strong><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/accessibility">Accessibility</Link><Link href="/admin">Demo admin</Link></div></div><div className="container footer-bottom"><span>© 2026 {appName}</span><span>Houston launch market · English (US)</span></div></footer>;
+}

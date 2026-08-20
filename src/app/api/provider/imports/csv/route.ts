@@ -1,0 +1,2 @@
+import { ok, problem } from "@/lib/api/response";
+export async function POST(request: Request) { const contentType = request.headers.get("content-type") ?? ""; if (!contentType.includes("multipart/form-data") && !contentType.includes("text/csv")) return problem(415, "UNSUPPORTED_MEDIA_TYPE", "Upload CSV as multipart/form-data or text/csv."); return ok({ importId: crypto.randomUUID(), status: "validation_preview", rows: 0, errors: [], duplicateCandidates: [], synthetic: true }, { status: 202 }); }

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify:env
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test -- --coverage=false
+      - run: pnpm build
+      - run: pnpm audit --audit-level=high
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e -- --project=chromium
+
+  migration-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject dangerous migration patterns
+        run: |
+          ! grep -RinE 'drop database|alter role .*superuser' supabase/migrations
+          grep -Rin 'enable row level security' supabase/migrations
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2

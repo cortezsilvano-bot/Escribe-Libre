@@ -1,0 +1,1 @@
+export default function Loading(){ return <main className="container content-page" aria-busy="true"><p className="kicker">Loading</p><h1>Finding the latest listing records…</h1><div className="info-card">Preparing costs, provenance, and freshness details.</div></main>; }

@@ -1,0 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import { CalendarDays, Mail, ShieldAlert } from "lucide-react";
+import type { RentalListing } from "@/domain/listing";
+import { formatMoney } from "@/lib/total-cost/calculate";
+
+export function ContactCard({ listing }: { listing: RentalListing }) {
+  const [mode, setMode] = useState<"contact" | "tour">("contact");
+  const [sent, setSent] = useState(false);
+  return <aside className="contact-card" aria-label="Contact provider"><p className="kicker">Contact the provider</p><h2>{listing.provider.name}</h2><span className="price">{formatMoney(listing.advertisedRentCents)} / month</span><div className="detail-actions"><button type="button" className={mode === "contact" ? "button button-ink" : "button button-outline"} onClick={() => setMode("contact")}><Mail size={16}/>Message</button><button type="button" className={mode === "tour" ? "button button-ink" : "button button-outline"} onClick={() => setMode("tour")}><CalendarDays size={16}/>Tour</button></div><form className="stack-form" onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Full name<input name="name" autoComplete="name" required /></label><label>Email<input name="email" type="email" autoComplete="email" required /></label><label>Phone (optional)<input name="phone" type="tel" autoComplete="tel" /></label>{mode === "tour" && <><label>Preferred date<input name="date" type="date" min="2026-07-16" required /></label><label>Tour type<select name="type"><option>In person</option><option>Video tour</option></select></label></>}<label>{mode === "tour" ? "Tour notes" : "Message"}<textarea name="message" required defaultValue={mode === "tour" ? "I would like to tour this rental. Please let me know what times are available." : "Is this rental still available? I would like to learn more."} /></label><label><span><input type="checkbox" required /> I agree to share these contact details with this listing provider.</span></label><button className="button button-coral" type="submit">{mode === "tour" ? "Request a tour" : "Send contact request"}</button>{sent && <p role="status" className="form-message">Demo request saved for this session. Production mode routes it privately to the provider and sends an email preview.</p>}</form><div className="persistent-warning"><ShieldAlert size={17} /><span>Never wire money, use gift cards, or send cryptocurrency before independently verifying the rental.</span></div></aside>;
+}

@@ -11,3 +11,6 @@ src-tauri/resources/
 .env
 .env*.local
 _analysis_pdf_text/
+
+# Desktop build artifacts (ship via GitHub Releases, not git)
+Installer/

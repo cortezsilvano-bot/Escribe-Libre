@@ -1,0 +1,10 @@
+{
+  "name": "Rental Marketplace",
+  "short_name": "Rentals",
+  "description": "Transparent Houston rental discovery with source and cost details.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffefa",
+  "theme_color": "#123f3a",
+  "icons": [{ "src": "/rental-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

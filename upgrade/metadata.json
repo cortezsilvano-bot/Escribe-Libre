@@ -1,0 +1,6 @@
+{
+  "name": "Professional Web Text Editor",
+  "description": "A high-fidelity, paginated, collaborative word processor in the browser built with Tiptap and ProseMirror.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

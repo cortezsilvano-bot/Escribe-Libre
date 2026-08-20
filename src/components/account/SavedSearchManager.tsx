@@ -1,0 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { BellRing, Plus, Trash2 } from "lucide-react";
+
+type SavedSearch = { id: number; title: string; criteria: string; frequency: string; enabled: boolean };
+
+export function SavedSearchManager() {
+  const [searches, setSearches] = useState<SavedSearch[]>([{ id: 1, title: "2 beds near the Medical Center", criteria: "2+ beds · Texas Medical Center · under $2,500", frequency: "Daily", enabled: true }]);
+  const [showForm, setShowForm] = useState(false);
+  return <main className="dashboard-page"><div className="container"><header className="dashboard-hero"><div><p className="kicker">Renter workspace</p><h1>Saved searches & alerts</h1><p>Demo alerts are previewed locally; production delivery respects consent and unsubscribe preferences.</p></div><button className="button button-coral" type="button" onClick={() => setShowForm(!showForm)}><Plus size={17}/>New saved search</button></header>{showForm && <form className="dashboard-card stack-form" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); setSearches([...searches, { id: Date.now(), title: String(data.get("title")), criteria: String(data.get("criteria")), frequency: String(data.get("frequency")), enabled: true }]); setShowForm(false); }}><label>Search title<input name="title" required placeholder="Katy houses under $2,500" /></label><label>Criteria summary<input name="criteria" required placeholder="House · Katy · max $2,500" /></label><label>Alert frequency<select name="frequency"><option>Daily</option><option>Weekly</option><option>Instant (when jobs are configured)</option></select></label><button className="button button-ink" type="submit">Save search</button></form>}<div className="dashboard-card"><h2>Your searches</h2>{searches.map((search) => <div className="table-row" key={search.id}><div><strong>{search.title}</strong><br/><small>{search.criteria}</small></div><span>{search.frequency}</span><label><input type="checkbox" checked={search.enabled} onChange={() => setSearches(searches.map((item) => item.id === search.id ? { ...item, enabled: !item.enabled } : item))}/> Email alerts</label><button className="icon-action" type="button" aria-label={`Delete ${search.title}`} onClick={() => setSearches(searches.filter((item) => item.id !== search.id))}><Trash2 size={16}/></button></div>)}{!searches.length && <div className="empty-state"><BellRing/><p>No saved searches yet.</p></div>}</div><p><Link className="text-link" href="/alerts">Manage alert delivery and consent</Link></p></div></main>;
+}
