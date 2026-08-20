@@ -6,6 +6,12 @@ Local development needs no paid API keys. All 108 Houston-area listings and prop
 
 ## Quick start
 
+New here? **[docs/INSTALL.md](docs/INSTALL.md)** is a step-by-step guide that
+covers prerequisites, the standalone editor prototype in `upgrade/`, the
+optional Supabase and desktop builds, and troubleshooting.
+
+The short version:
+
 ```bash
 cp .env.example .env.local
 pnpm install
