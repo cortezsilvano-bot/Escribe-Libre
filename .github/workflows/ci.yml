@@ -27,9 +27,11 @@ jobs:
       - run: pnpm lint
       - run: pnpm test -- --coverage=false
       - run: pnpm build
-      - run: pnpm audit --audit-level=high
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e -- --project=chromium
+      # Runs last: a new advisory should not cancel the e2e and
+      # accessibility suites, which are the slowest gate to lose.
+      - run: pnpm audit --audit-level=high
 
   migration-check:
     runs-on: ubuntu-latest
