@@ -1,6 +1,6 @@
 [package]
 name = "textdoc"
-version = "0.2.2"
+version = "0.2.3"
 description = "Textdoc desktop shell"
 authors = ["Textdoc"]
 edition = "2021"

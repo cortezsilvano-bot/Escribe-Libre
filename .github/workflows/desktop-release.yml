@@ -1,0 +1,76 @@
+name: Desktop Release
+
+# Builds the Windows desktop installer (Tauri 2) in CI.
+#
+# Why CI rather than a local build: Smart App Control / WDAC on developer
+# machines blocks execution of freshly compiled, unsigned cargo build-script
+# binaries (os error 4551), which fails every local `tauri build`. The hosted
+# windows runner has no such policy.
+#
+# Manual run  -> builds and uploads the installers as workflow artifacts.
+# Tag push v* -> builds and attaches them to a DRAFT GitHub Release, which
+#                stays unpublished until a human reviews and publishes it.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Root install supplies @tauri-apps/cli, which drives the build.
+      - run: pnpm install --frozen-lockfile
+
+      # tauri.conf.json sets frontendDist to ../upgrade/dist and runs
+      # `npm --prefix upgrade run build` as beforeBuildCommand, so the
+      # prototype's own npm dependencies must exist before tauri starts.
+      - name: Install editor prototype dependencies
+        working-directory: upgrade
+        run: npm ci
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - uses: tauri-apps/tauri-action@v0
+        id: tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Empty tagName on a manual run tells the action to build only and
+          # skip release creation entirely.
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: Textdoc ${{ github.ref_name }}
+          releaseDraft: true
+          prerelease: false
+
+      - name: Upload installers as artifacts
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: textdoc-windows-installers
+          if-no-files-found: error
+          path: |
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*-setup.exe
