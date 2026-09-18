@@ -1,12 +1,12 @@
-# Textdoc Desktop
+# Escribe Libre Desktop
 
-The desktop shell is scaffolded with Tauri 2.
+The desktop shell uses Tauri 2 and packages the standalone Vite editor from `upgrade/`.
 
 ## Prerequisites
 
 - Rust toolchain with `cargo` and `rustc`.
 - Visual Studio Build Tools with MSVC and a Windows SDK.
-- Node dependencies installed with `npm install`
+- Node dependencies installed with `npm install` at the repository root and in `upgrade/`
 
 On this machine, Rust was installed under the user cargo bin and the stable toolchain can be used with:
 
@@ -21,19 +21,11 @@ The Visual Studio Build Tools installer failed with `0x80070070`, which is Windo
 
 ```bash
 npm run desktop:dev
-npm run desktop:prepare-sidecar
 npm run desktop:build
 ```
 
 ## Packaging Strategy
 
-Textdoc uses `/api/import/docx`, so production desktop packaging should keep a local Next server sidecar instead of converting the app to static export. The app is configured with `output: "standalone"` and `npm run desktop:prepare-sidecar` copies:
+The desktop release is self-contained: Tauri bundles the compiled `upgrade/dist` frontend and embeds the existing icon assets in the executable and Windows installers. Runtime document content is kept in browser storage owned by the installed application profile, not in the installation directory.
 
-- `.next/standalone`
-- `.next/static`
-- `public`
-- the active Node runtime
-
-into `src-tauri/resources/next-server`.
-
-In release builds, Tauri starts the bundled Node runtime with `server.js`, waits for the local server to accept connections, then navigates the main window to that local URL. The binary build is still blocked until MSVC and Windows SDK install successfully.
+The installer build is currently blocked on this machine until the Rust toolchain, MSVC compiler, and Windows SDK are available on `PATH`. The JavaScript production build can still be verified independently with `npm --prefix upgrade run build`.

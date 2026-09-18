@@ -2,31 +2,53 @@
 
 ## Local development
 
-Copy `.env.example` to `.env.local`. No paid key is required for the default `APP_DATA_MODE=mock`. Mock mode uses synthetic inventory, a static map presentation, local email previews, and in-memory/local-browser workflow state.
+There is nothing to configure. `npm install && npm run dev` gives you a working
+word processor; documents go to IndexedDB and preferences to `localStorage`.
 
-Required in production:
+Copy `.env.example` to `.env.local` only if you want to change the app name or
+URL, or to enable the optional sync mode.
 
-- `NEXT_PUBLIC_APP_NAME`, `NEXT_PUBLIC_APP_URL`, `APP_DATA_MODE=supabase`
-- Supabase public URL/anon key and server-only service role key
-- Typesense host/protocol/port, search-only browser key, and server-only admin key
-- Upstash Redis URL/token and QStash token/signing keys
-- Mapbox public token and server-only secret token
-- Resend API key and verified `EMAIL_FROM`
-- Sentry DSN/auth token and PostHog public key/host when those services are enabled
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_APP_NAME` | `Escribe Libre` | Branding in metadata and the UI |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Absolute URLs for metadata, robots, sitemap |
+| `APP_DATA_MODE` | `mock` | `mock` = browser storage, `supabase` = account-backed sync |
 
-Optional flags default to false: RentCast ingestion, AI search/summaries, SMS, and provider billing. Enabling a flag makes its related credentials mandatory during production validation.
+## Optional sync mode
+
+Required only when `APP_DATA_MODE=supabase`:
+
+| Variable | Exposure | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | browser | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | browser | Anon key, constrained by RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | Privileged server operations |
+
+In production, `getServerEnv()` throws at startup if `APP_DATA_MODE=supabase`
+and any of the three is missing, so a half-configured deployment fails fast
+instead of silently falling back to local storage.
+
+Variables prefixed with `NEXT_PUBLIC_` reach the browser. The service-role key
+must not be, and is not, part of the public schema. The validator reports
+missing variable names, never their values.
 
 ## Commands
 
 ```bash
-pnpm install
-pnpm dev
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm test:e2e
-pnpm build
+npm install
+npm run dev
+npm run typecheck
+npm run lint
+npm run test
+npm run test:e2e
+npm run build
 ```
 
-Environment variables prefixed with `NEXT_PUBLIC_` may reach the browser. Service role, admin, signing, email, SMS, AI, and billing credentials must remain server-only. The runtime validator reports missing variable names but never their values.
+`npm run verify` runs typecheck, lint, unit tests, e2e tests, and the build.
+`npm run release:check` adds the `upgrade/` desktop frontend.
 
+## Runtime checks
+
+- `GET /api/health` - liveness, service name, and current data mode.
+- `GET /api/readiness` - which dependencies are configured. In `mock` mode
+  everything required is local, so this reports ready with no credentials set.

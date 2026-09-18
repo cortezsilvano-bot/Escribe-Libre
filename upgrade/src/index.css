@@ -2,8 +2,15 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Aptos", "Segoe UI", ui-sans-serif, sans-serif;
   --font-mono: "Courier New", ui-monospace, SFMono-Regular, monospace;
+}
+
+:root {
+  color: #1f2937;
+  background: #e8e7e3;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -13,37 +20,31 @@ body {
 }
 
 .glass-bg {
-  background: linear-gradient(135deg, #3b82f6, #6366f1, #8b5cf6, #d946ef);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
+  background-color: #e8e7e3;
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(211, 216, 222, 0.6));
 }
 
 .dark.glass-bg,
 .dark .glass-bg {
-  background: linear-gradient(135deg, #1e3a8a, #312e81, #4c1d95, #701a75);
-}
-
-@keyframes gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  background-color: #20252b;
+  background-image: linear-gradient(135deg, #20252b, #30363d);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(24px);
+  background: rgba(248, 249, 250, 0.82);
+  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(110, 119, 129, 0.34);
+  box-shadow: 0 12px 40px rgba(31, 41, 55, 0.12);
 }
 
 .glass-toolbar {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  box-shadow: inset 0 0 12px rgba(255,255,255,0.5), 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid rgba(110, 119, 129, 0.28);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(31, 41, 55, 0.06);
 }
 
 .glass-button {
@@ -55,9 +56,9 @@ body {
   background: rgba(255, 255, 255, 0.6);
 }
 .glass-button.active {
-  background: #dbeafe;
+  background: #dce8f4;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  color: #2563eb;
+  color: #155e75;
 }
 
 .ProseMirror {
@@ -209,4 +210,15 @@ body {
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 720px) {
+  .glass-bg {
+    padding: 0.75rem;
+  }
+
+  .document-page {
+    margin-top: 1rem;
+    padding: 2rem;
+  }
 }

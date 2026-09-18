@@ -1,58 +1,42 @@
 # Installation Guide
 
-Get the project running on your machine in about five minutes. Every command
+Get Escribe Libre running on your machine in about five minutes. Every command
 below can be copy-pasted as-is.
 
 ---
 
-## Before you start: what actually runs today
-
-This repository is mid-transition, and the install experience reflects that.
-Reading this first will save you confusion:
+## What you get
 
 | If you run… | You get |
 |---|---|
-| `pnpm dev` (the main app) | A **rental marketplace** — search, listings, provider and admin dashboards |
-| `pnpm dev` inside `upgrade/` | A **standalone text editor** prototype |
+| `npm run dev` (the main app) | The **word processor**: document dashboard at `/`, editor at `/documents/<id>` |
+| `npm run dev` inside `upgrade/` | A **standalone single-document editor**, the one the desktop build packages |
 
-The main app also contains a full Tiptap text editor
-(`src/components/editor/`, ~1,700 lines) — but **no page currently renders
-it**, so you cannot reach it in the browser. It is code in the tree, not a
-running feature. Same for `src/components/dashboard/Dashboard.tsx`.
-
-If you came here to see the editor, use **[Part 2](#part-2--run-the-editor-prototype)**.
+Both are the same product at different scopes. The main app adds the document
+library, templates, backups, versions, comments, and the print view.
 
 ---
 
-## Part 1 — Run the main app
+## Part 1 — Run the app
 
 ### Step 1: Install the prerequisites
 
-You need **Node.js 24** and **pnpm 11.7**.
-
-**Check what you already have:**
+You need **Node.js 24**. npm ships with it.
 
 ```bash
 node --version    # want v24.x
-pnpm --version    # want 11.7.x
+npm --version
 ```
 
-**Install Node 24** if that first command failed or showed an older version:
+Install Node 24 if that first command failed or showed an older version:
 
 - **Windows / macOS:** download the LTS installer from [nodejs.org](https://nodejs.org)
 - **macOS with Homebrew:** `brew install node@24`
 - **Linux:** `curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash - && sudo apt install -y nodejs`
 
-**Install pnpm** — the easiest way is Corepack, which ships with Node and
-reads the exact version this project expects straight from `package.json`:
-
-```bash
-corepack enable pnpm
-```
-
-> **Why not npm?** This project is pinned to `pnpm@11.7.0` and its lockfile is
-> `pnpm-lock.yaml`. Using npm or yarn will produce a different dependency tree
-> and the security overrides in `pnpm-workspace.yaml` will be ignored.
+> **npm or pnpm?** Either works. The repo keeps both `pnpm-lock.yaml` and the
+> npm scripts; `pnpm-workspace.yaml` carries security overrides that only apply
+> on pnpm. Pick one per checkout and stay with it. This guide uses npm.
 
 ### Step 2: Get the code
 
@@ -61,43 +45,40 @@ git clone https://github.com/cortezsilvano-bot/Escribe-Libre.git
 cd Escribe-Libre
 ```
 
-### Step 3: Create your config file
+### Step 3: Install dependencies
 
 ```bash
-cp .env.example .env.local
-```
-
-**You do not need to edit it or supply any API keys.** The defaults run the
-app in `APP_DATA_MODE=mock`, which uses 108 synthetic Houston listings and
-needs no paid service. Cloud sync is optional and covered in
-[Part 3](#part-3--optional-connect-supabase).
-
-On Windows PowerShell, use `copy .env.example .env.local` instead.
-
-### Step 4: Install dependencies
-
-```bash
-pnpm install
+npm install
 ```
 
 Takes a minute or two the first time.
 
-### Step 5: Start it
+### Step 4: Start it
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
 Open **<http://localhost:3000>**.
 
-Good pages to try: `/search`, `/saved`, `/compare`,
-`/provider/listings/new`, `/admin`.
+**You do not need a config file or any API key.** The app defaults to
+`APP_DATA_MODE=mock`, which keeps every document in your browser. Cloud sync is
+optional and covered in [Part 3](#part-3--optional-connect-supabase).
 
 Press `Ctrl+C` in the terminal to stop the server.
 
+### Step 5: Try it
+
+1. Click **New document**, or pick a template.
+2. Type. The status bar counts words; edits autosave after ~600 ms.
+3. Open the **Inspector** panel (right) to set page size, margins, a header, or
+   a footer, and to add comments and version snapshots.
+4. **File → Export DOCX**, or `Ctrl+P` for the print/PDF view.
+5. Go back to `/` — your document is in the list.
+
 ### Did it work?
 
-Run this in a second terminal while `pnpm dev` is running:
+Run this in a second terminal while `npm run dev` is running:
 
 ```bash
 curl http://localhost:3000/api/health
@@ -106,18 +87,23 @@ curl http://localhost:3000/api/health
 You should see this — the payload is nested under `data`:
 
 ```json
-{"ok":true,"data":{"status":"healthy","service":"rental-marketplace-web","mode":"mock"},"meta":{...}}
+{"ok":true,"data":{"status":"healthy","service":"escribe-libre-web","mode":"mock"},"meta":{...}}
 ```
 
-`"mode":"mock"` confirms it is running on synthetic data with no external
-services, which is what you want for a first run.
+`"mode":"mock"` confirms it is running entirely on browser storage with no
+external services, which is what you want for a first run.
+
+> **Where do documents live?** In this browser profile's IndexedDB, under the
+> `textdoc` database. Clearing site data deletes them permanently, and there is
+> no server copy. Use **Backup all** on the dashboard before you clean anything.
 
 ---
 
-## Part 2 — Run the editor prototype
+## Part 2 — Run the standalone editor
 
-This is the standalone word processor, in its own folder with its own
-dependencies. It does **not** share the main app's install.
+This is the single-document editor the desktop build packages. It lives in its
+own folder with its own dependencies and does **not** share the main app's
+install.
 
 ```bash
 cd upgrade
@@ -125,31 +111,30 @@ npm install
 npm run dev
 ```
 
-Open **<http://localhost:3000>**.
+Two things to know:
 
-Three things to know:
-
-- It uses **npm**, not pnpm — it has a `package-lock.json`, not a pnpm lockfile.
-- Its `README.md` tells you to set a `GEMINI_API_KEY`. **You don't need one.**
-  Nothing in `upgrade/src/` actually calls the Gemini API; the dependency is
-  unused. Skip that step.
-- It wants **port 3000**, same as the main app. Stop the main app first, or
-  run `npm run dev -- --port=3001`.
+- Its `README.md` mentions a `GEMINI_API_KEY`. **You don't need one.** Nothing
+  in `upgrade/src/` calls that API; the dependency is unused.
+- It wants **port 3000**, same as the main app. Stop the main app first, or run
+  `npm run dev -- --port=3001`.
 
 ---
 
 ## Part 3 — Optional: connect Supabase
 
 Only needed if you want accounts and cross-device sync. Skip it otherwise —
-mock mode is fully functional without it.
+local mode is fully functional without it.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Apply the migrations in order:
    ```bash
    supabase db push
    ```
-   Load `supabase/seed.sql` **only** in a development project, never production.
-3. Fill these into `.env.local`, then set `APP_DATA_MODE=supabase`:
+3. Copy the example config and fill in the three values, then set
+   `APP_DATA_MODE=supabase`:
+   ```bash
+   cp .env.example .env.local     # Windows PowerShell: copy .env.example .env.local
+   ```
    ```
    NEXT_PUBLIC_SUPABASE_URL=
    NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -157,19 +142,21 @@ mock mode is fully functional without it.
    ```
 4. Confirm the config is valid:
    ```bash
-   pnpm verify:env
+   npm run verify:env
    ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it to the browser and
 never prefix it with `NEXT_PUBLIC_`.
 
+> **Status:** the schema and credentials plumbing exist, but the Supabase
+> implementation of `DocumentRepository` is not written yet, so documents still
+> save locally. Tracked in `IMPLEMENTATION_PLAN.md`, Milestone 5.
+
 ---
 
 ## Part 4 — Optional: build the desktop app
 
-The desktop shell uses [Tauri 2](https://tauri.app). This is the most
-involved path, and **it does not currently build to a finished binary** — see
-the note at the end.
+The desktop shell uses [Tauri 2](https://tauri.app) and bundles `upgrade/dist`.
 
 **Extra prerequisites:**
 
@@ -181,16 +168,15 @@ the note at the end.
 **Commands:**
 
 ```bash
-pnpm desktop:dev              # run the desktop shell in development
-pnpm desktop:prepare-sidecar  # bundle the Next.js server for packaging
-pnpm desktop:build            # produce an installer
+npm run desktop:dev      # run the desktop shell in development
+npm run desktop:build    # produce an installer
+npm run release:desktop  # full build, then the installer
 ```
 
-> **Known blocker:** `docs/desktop.md` records that the Windows binary build
-> is blocked pending a successful MSVC and Windows SDK install (the Build
-> Tools installer failed with `0x80070070`, `ERROR_DISK_FULL`). Also note
-> that packaging expects an `/api/import/docx` endpoint that **does not exist
-> yet** — `src/app/api/import/docx/` contains no `route.ts`.
+> **Known blocker:** `docs/desktop.md` records that the Windows binary build is
+> blocked pending a successful MSVC and Windows SDK install (the Build Tools
+> installer failed with `0x80070070`, `ERROR_DISK_FULL`). The JavaScript
+> production build can still be verified with `npm --prefix upgrade run build`.
 
 Prebuilt installers are not kept in this repository. They are build artifacts
 and belong in GitHub Releases.
@@ -201,12 +187,12 @@ and belong in GitHub Releases.
 
 | Problem | Fix |
 |---|---|
-| `pnpm: command not found` | Run `corepack enable pnpm`. If that fails, `npm install -g pnpm@11.7.0`. |
-| `ERR_PNPM_FROZEN_LOCKFILE_WITH_OUTDATED_LOCKFILE` | Run plain `pnpm install` — the `--frozen-lockfile` flag is for CI. |
-| Port 3000 already in use | `pnpm dev --port 3001`, or stop whatever is on 3000. |
-| `Cannot find module '@/...'` | You are in the wrong folder. Run commands from the repo root, or from `upgrade/` for the prototype. |
-| Editor is nowhere in the UI | Expected — it is not wired to a route. See the table at the top. |
-| Build fails after pulling changes | `pnpm install` again; dependencies likely moved. |
+| Port 3000 already in use | `npm run dev -- --port 3001`, or stop whatever is on 3000. |
+| `Cannot find module '@/...'` | You are in the wrong folder. Run commands from the repo root, or from `upgrade/` for the standalone editor. |
+| Dashboard is empty after it worked before | Documents are per-browser-profile. A different browser, a private window, or cleared site data means a different (empty) store. |
+| DOCX import fails | Only `.docx` is supported, up to 20 MB. Legacy `.doc` and password-protected files are rejected. |
+| Editor loads but looks unstyled | A stale build. Stop the server, delete `.next/`, and run `npm run dev` again. |
+| Build fails after pulling changes | `npm install` again; dependencies likely moved. |
 | Tauri build fails on Windows | MSVC and the Windows SDK are missing. See Part 4. |
 
 ---
@@ -217,19 +203,19 @@ Run these from the repo root.
 
 | Command | What it does |
 |---|---|
-| `pnpm dev` | Start the dev server on port 3000 |
-| `pnpm build` | Production build |
-| `pnpm typecheck` | TypeScript check, no output files |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Unit tests (Vitest) |
-| `pnpm test:e2e` | Browser tests (Playwright, port 3107) |
-| `pnpm verify` | Everything above, in sequence — matches CI |
-| `pnpm verify:env` | Validate `.env.local` without printing secrets |
+| `npm run dev` | Start the dev server on port 3000 |
+| `npm run build` | Production build |
+| `npm run typecheck` | TypeScript check, no output files |
+| `npm run lint` | ESLint |
+| `npm test` | Unit tests (Vitest) |
+| `npm run test:e2e` | Browser tests (Playwright, port 3107) |
+| `npm run verify` | Everything above, in sequence — matches CI |
+| `npm run verify:env` | Validate `.env.local` without printing secrets |
 
-Before your first `pnpm test:e2e`, install the browser once:
+Before your first `npm run test:e2e`, install the browser once:
 
 ```bash
-pnpm exec playwright install chromium
+npx playwright install chromium
 ```
 
 ---
@@ -238,6 +224,7 @@ pnpm exec playwright install chromium
 
 - **[README.md](../README.md)** — what the project is
 - **[ARCHITECTURE.md](../ARCHITECTURE.md)** — how it is structured
+- **[DATA_MODEL.md](../DATA_MODEL.md)** — document, version, and comment shapes
 - **[ENVIRONMENT.md](../ENVIRONMENT.md)** — every environment variable
 - **[docs/DEPLOYMENT.md](DEPLOYMENT.md)** — deploying to production
 - **[docs/desktop.md](desktop.md)** — desktop packaging detail

@@ -1,2 +1,12 @@
 import Link from "next/link";
-export default function NotFound(){ return <main className="container content-page"><p className="kicker">404</p><h1>That rental page isn’t available.</h1><p className="lead">It may have expired, been removed from public search, or never existed.</p><Link className="button button-ink" href="/search">Search active Houston rentals</Link></main>; }
+
+export default function NotFound() {
+  return (
+    <main className="status-page">
+      <p className="eyebrow">404</p>
+      <h1>That page isn&rsquo;t here.</h1>
+      <p>The document may have been deleted from this browser, or the link may be wrong.</p>
+      <Link className="primary-button" href="/">Back to documents</Link>
+    </main>
+  );
+}

@@ -2,54 +2,92 @@
 
 ## Shape
 
-The rental marketplace is a Next.js App Router modular monolith. UI, route handlers, and domain services ship together, while integrations sit behind typed ports. This keeps local development simple and allows Supabase, Typesense, Mapbox, Upstash, QStash, Resend, PostHog, and Sentry to be enabled independently.
+Escribe Libre is a Next.js App Router application whose product logic runs in
+the browser. The document model, editing commands, pagination, export, and
+persistence are all client-side modules; the server exists to serve the app and
+to run the one conversion that needs a Node runtime.
 
 ```text
-Browser / server-rendered pages
-        |
-Next.js routes and server operations
-        |
-Domain services (search, cost, trust, ingestion, alerts)
-        |
-Typed provider ports
-        |
-Supabase | Typesense | Mapbox | Upstash | email providers
-        |
-Deterministic fixture/mock adapters in local development
+Browser
+  |
+  |-- React / Next.js App Router pages
+  |     /                      -> document dashboard
+  |     /documents/[id]        -> editor
+  |     /documents/[id]/print  -> print + PDF view
+  |
+  |-- Editor core (Tiptap + ProseMirror)
+  |     extensions: inline comments, page break, spellcheck indicator
+  |
+  |-- Document services
+  |     document-model (Zod schemas)  pagination  export (docx/html/txt)
+  |
+  |-- DocumentRepository port
+        `-> IndexedDB adapter (idb-keyval)      [default]
+        `-> Supabase adapter                    [optional, APP_DATA_MODE=supabase]
+
+Server (Next.js route handlers)
+  POST /api/import/docx   -> mammoth conversion + server-side sanitisation
+  GET  /api/health, /api/readiness
 ```
 
 ## Authority boundaries
 
-- Supabase PostgreSQL is the production system of record.
-- Typesense is a disposable derived index populated through an outbox.
-- Listing facts come only from provider submissions, licensed adapters, or clearly synthetic development fixtures.
-- Verification UI is derived from an active `verification_records` row, never from a provider-supplied boolean.
-- Price and cost results come from the deterministic total-cost module, never an LLM.
-- Browser role claims are display hints only; production authorization is evaluated server-side and by RLS.
+- The browser's IndexedDB store is the system of record in the default mode.
+  Nothing leaves the device unless the user exports a file.
+- Every record crossing a persistence boundary is parsed with a Zod schema
+  (`documentRecordSchema`, `documentVersionSchema`, `documentCommentSchema`), so
+  a corrupt or hand-edited entry is rejected rather than rendered.
+- All pasted and imported HTML is sanitised before it reaches the editor:
+  in the browser for paste and HTML import, and again on the server for DOCX.
+- Page geometry is derived from `PageSettings` by the pagination module, never
+  from ad-hoc CSS in components.
 
 ## Application modules
 
-- `src/domain`: types and pure business rules.
-- `src/data`: generated Houston fixtures and read models.
-- `src/lib/search`: query parsing, URL serialization, ranking, and search adapters.
-- `src/lib/total-cost`: fee and concession calculation.
-- `src/lib/trust-safety`: verification, freshness, duplicate scoring, address normalization, and content scanning.
-- `src/lib/providers`: external adapter contracts and mock implementations.
-- `src/components`: accessible application shell and domain components.
-- `src/app`: pages and typed route handlers.
-- `supabase/migrations`: normalized schema, triggers, indexes, and policies.
+- `src/lib/documents`: document/version/comment schemas, the IndexedDB store,
+  the repository port, starter templates, and the `.textdoc` file format.
+- `src/lib/editor`: the Tiptap extension set, the custom inline-comment mark,
+  the page-break node, the spellcheck decoration plugin, and text indexing for
+  word counts and find/replace.
+- `src/lib/pagination`: page sizes, orientation, margins, and zoom resolved into
+  CSS custom properties.
+- `src/lib/export`: DOCX generation and browser file downloads.
+- `src/lib/settings`: local preferences (theme, default page size and font,
+  autosave delay) in `localStorage`.
+- `src/components/dashboard`: the document list, templates, search, and backup.
+- `src/components/editor`: the editor shell, ribbon, inspector sidebar,
+  selection toolbar, status bar, and print view.
+- `src/app`: pages and route handlers.
+- `supabase/migrations`: the optional server schema for synced documents.
 
 ## Runtime modes
 
-`APP_DATA_MODE=mock` is the safe local default. It uses generated Houston inventory and browser-local demo workflows. `APP_DATA_MODE=supabase` requires validated server credentials and enables durable records. Search can still fall back to PostgreSQL if Typesense is unavailable; readiness reports the degraded dependency.
+`APP_DATA_MODE=mock` is the default and needs no configuration: documents live
+in IndexedDB and the app is fully functional offline after first load, backed by
+the service worker in `public/sw.js`.
 
-External integrations are opt-in flags. RentCast is a licensed API adapter only and never a scraper. AI, SMS, and provider billing are disabled by default and are not required by core flows.
+`APP_DATA_MODE=supabase` is opt-in. It requires validated Supabase credentials
+and enables durable, account-scoped documents. `GET /api/readiness` reports
+which dependencies are configured.
 
-## Search and indexing
+## Editing model
 
-Writes commit to PostgreSQL together with a `search_index_outbox` event. A QStash-triggered or manually invoked idempotent worker upserts Typesense records, records attempts, and moves exhausted events to a failed state. Public search applies hard filters first, then geography, text, freshness, active verification, source trust, and completeness. Sponsored inventory occupies explicit labeled slots and never modifies organic rank.
+The editor holds one Tiptap instance. `onUpdate` recomputes word and character
+counts and schedules a debounced save (300/600/1000 ms, a user preference).
+Title and page-setting edits schedule the same save, so a single writer owns
+persistence. A `beforeunload` guard and an in-app confirmation block navigation
+while a save is pending or failed.
+
+Comments are stored twice on purpose: as a record in the document store, and as
+an `inlineComment` mark carrying the comment id on the selected range, so the
+highlight survives editing and the sidebar stays authoritative for the thread.
+
+Version snapshots are full copies of title, content, and page settings taken on
+demand. Restoring one writes it back as the current document.
 
 ## Deployment
 
-Vercel hosts Next.js; Supabase hosts Postgres/Auth/Storage; Typesense provides the production search index. Upstash Redis supplies distributed caching and rate limits and QStash runs serverless jobs. Resend delivers email. Sentry and PostHog are loaded only when configured and use typed wrappers that exclude message bodies, documents, and tokens.
-
+The app builds to a standalone Next.js server (`output: "standalone"`) and runs
+anywhere Node runs; the only route needing a server is the DOCX import. Security
+headers and a strict Content-Security-Policy are set in `next.config.ts`. The
+desktop build is a separate Tauri bundle of the `upgrade/` Vite app.

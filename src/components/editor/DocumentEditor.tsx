@@ -365,14 +365,19 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     });
 
     if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      showToast(payload?.error ?? "Could not import DOCX file.", "error");
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | null;
+      showToast(payload?.error?.message ?? "Could not import DOCX file.", "error");
       return;
     }
 
-    const payload = (await response.json()) as { html: string; warnings: string[] };
-    editor.commands.setContent(payload.html);
-    showToast(payload.warnings.length ? payload.warnings.join(" ") : "DOCX imported.", "success");
+    const payload = (await response.json()) as { data: { html: string; warnings: string[] } };
+    editor.commands.setContent(payload.data.html);
+    showToast(
+      payload.data.warnings.length ? payload.data.warnings.join(" ") : "DOCX imported.",
+      "success",
+    );
   }
 
   function printDocument() {
@@ -620,7 +625,7 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
                 <UserPlus size={16} />
                 Share
               </button>
-              <div aria-label="User Avatar" className="avatar-badge">
+              <div aria-hidden="true" className="avatar-badge">
                 <CircleUserRound size={26} />
               </div>
             </div>

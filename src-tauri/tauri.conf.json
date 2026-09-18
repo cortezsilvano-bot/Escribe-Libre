@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Textdoc",
+  "productName": "Escribe Libre",
   "version": "0.2.2",
-  "identifier": "com.textdoc.desktop",
+  "identifier": "com.escribelibre.desktop",
   "build": {
     "beforeDevCommand": "npm --prefix upgrade run dev",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Textdoc",
+        "title": "Escribe Libre",
         "width": 1280,
         "height": 860,
         "minWidth": 960,
@@ -21,11 +21,16 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
     }
   },
   "bundle": {
     "active": true,
+    "category": "Productivity",
+    "shortDescription": "A focused local document editor",
+    "longDescription": "Escribe Libre is a private, focused document editor with rich text editing and local export tools.",
+    "publisher": "Escribe Libre",
+    "copyright": "Copyright (c) 2026 Escribe Libre",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -33,6 +38,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "targets": "all"
+    "targets": ["nsis", "msi"],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "perMachine",
+        "startMenuFolder": "Escribe Libre"
+      },
+      "wix": {
+        "language": "en-US"
+      }
+    }
   }
 }

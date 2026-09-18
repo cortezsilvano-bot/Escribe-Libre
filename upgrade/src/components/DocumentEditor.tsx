@@ -15,14 +15,11 @@ import Image from '@tiptap/extension-image';
 import TaskItem from '@tiptap/extension-task-item';
 import TaskList from '@tiptap/extension-task-list';
 import html2pdf from 'html2pdf.js';
-
 import CharacterCount from '@tiptap/extension-character-count';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
-
-import { CommentMark } from './extensions/CommentMark';
 import { SpellCheckIndicator } from './extensions/SpellCheck';
-
+import { CommentMark } from './extensions/CommentMark';
 import { Ribbon } from './Ribbon';
 import { StatusBar } from './StatusBar';
 import { EditorBubbleMenu } from './EditorBubbleMenu';
@@ -40,15 +37,42 @@ const defaultContent = `
   <p style="text-align: right">Try editing this document to explore the features.</p>
 `;
 
+const storageKeys = {
+  content: 'editor-content',
+  title: 'editor-title',
+  theme: 'editor-theme',
+} as const;
+
+function readStorage(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStorage(key: string, value: string): boolean {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    window.localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function DocumentEditor() {
   const [zoom, setZoom] = useState(100);
   const [showFileMenu, setShowFileMenu] = useState(false);
-  const [documentTitle, setDocumentTitle] = useState('Project Proposal - Q4 Market Strategy');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState(() => readStorage(storageKeys.title) || 'Project Proposal - Q4 Market Strategy');
+  const [isDarkMode, setIsDarkMode] = useState(() => readStorage(storageKeys.theme) === 'dark');
   const [showToast, setShowToast] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('Saved locally');
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const savedContent = typeof window !== 'undefined' ? localStorage.getItem('editor-content') : null;
+  const savedContent = readStorage(storageKeys.content);
 
   const editor = useEditor({
     extensions: [
@@ -84,12 +108,13 @@ export function DocumentEditor() {
     ],
     content: savedContent || defaultContent,
     onUpdate: ({ editor }) => {
-      localStorage.setItem('editor-content', editor.getHTML());
+      const saved = writeStorage(storageKeys.content, editor.getHTML());
       
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
       saveTimeoutRef.current = setTimeout(() => {
+        setSaveMessage(saved ? 'Saved locally' : 'Local save unavailable');
         setShowToast(true);
         setTimeout(() => setShowToast(false), 2000);
       }, 1000);
@@ -100,6 +125,14 @@ export function DocumentEditor() {
       },
     },
   });
+
+  useEffect(() => {
+    writeStorage(storageKeys.title, documentTitle);
+  }, [documentTitle]);
+
+  useEffect(() => {
+    writeStorage(storageKeys.theme, isDarkMode ? 'dark' : 'light');
+  }, [isDarkMode]);
 
   const exportToFile = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
@@ -151,7 +184,7 @@ export function DocumentEditor() {
     setShowFileMenu(false);
   };
 
-  const handleExportDOCX = () => {
+  const handleExportDOC = () => {
     if (!editor) return;
     const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Document</title></head><body>";
     const footer = "</body></html>";
@@ -169,7 +202,7 @@ export function DocumentEditor() {
     }
 
     editor.commands.setContent('<p></p>');
-    localStorage.setItem('editor-content', '<p></p>');
+    writeStorage(storageKeys.content, '<p></p>');
     setDocumentTitle('Untitled Document');
     setShowFileMenu(false);
     editor.commands.focus('start');
@@ -213,21 +246,21 @@ export function DocumentEditor() {
                      <button onClick={handleExportTXT} className="block w-full text-left px-4 py-2 hover:bg-white/50 dark:hover:bg-gray-700/50 text-sm">Export as .txt</button>
                      <button onClick={handleExportHTML} className="block w-full text-left px-4 py-2 hover:bg-white/50 dark:hover:bg-gray-700/50 text-sm">Export as .html</button>
                      <button onClick={handleExportPDF} className="block w-full text-left px-4 py-2 hover:bg-white/50 dark:hover:bg-gray-700/50 text-sm">Download PDF</button>
-                     <button onClick={handleExportDOCX} className="block w-full text-left px-4 py-2 hover:bg-white/50 dark:hover:bg-gray-700/50 text-sm">Export as .docx</button>
+                      <button onClick={handleExportDOC} className="block w-full text-left px-4 py-2 hover:bg-white/50 dark:hover:bg-gray-700/50 text-sm">Export as .doc</button>
                    </div>
                  )}
                </div>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors">Edit</button>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors">View</button>
-               <button className="text-blue-700 dark:text-blue-400 font-semibold relative">
+               <span className="text-gray-500 dark:text-gray-400">Edit</span>
+               <span className="text-gray-500 dark:text-gray-400">View</span>
+               <span className="text-blue-700 dark:text-blue-400 font-semibold relative">
                  Insert
                  <div className="absolute -bottom-1 left-0 right-0 h-[2px] bg-blue-500 rounded-full blur-[1px]"></div>
                  <div className="absolute -bottom-1 left-0 right-0 h-[2px] bg-blue-500 rounded-full"></div>
-               </button>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors">Format</button>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors">Tools</button>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors">Extensions</button>
-               <button className="hover:text-gray-900 dark:hover:text-white transition-colors flex items-center">Help <ChevronDown className="w-3 h-3 ml-1" /></button>
+               </span>
+               <span className="text-gray-500 dark:text-gray-400">Format</span>
+               <span className="text-gray-500 dark:text-gray-400">Tools</span>
+               <span className="text-gray-500 dark:text-gray-400">Extensions</span>
+               <span className="text-gray-500 dark:text-gray-400 flex items-center">Help <ChevronDown className="w-3 h-3 ml-1" /></span>
              </div>
           </div>
           
@@ -239,7 +272,16 @@ export function DocumentEditor() {
              >
                {isDarkMode ? <Sun className="w-4 h-4 text-gray-200" /> : <Moon className="w-4 h-4 text-gray-800" />}
              </button>
-             <button className="flex items-center space-x-1.5 px-3 py-1.5 bg-white/30 dark:bg-gray-800/30 border border-white/50 dark:border-gray-700 rounded-full shadow-sm hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors">
+             <button onClick={async () => {
+               try {
+                 await navigator.clipboard.writeText(window.location.href);
+                 setSaveMessage('Document link copied');
+               } catch {
+                 setSaveMessage('Copy is unavailable');
+               }
+               setShowToast(true);
+               window.setTimeout(() => setShowToast(false), 2000);
+             }} className="flex items-center space-x-1.5 px-3 py-1.5 bg-white/30 dark:bg-gray-800/30 border border-white/50 dark:border-gray-700 rounded-full shadow-sm hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors">
                <UserPlus className="w-4 h-4 text-gray-800 dark:text-gray-200" />
                <span className="text-gray-900 dark:text-gray-100 font-medium text-sm">Share</span>
              </button>
@@ -268,12 +310,15 @@ export function DocumentEditor() {
             <EditorContent editor={editor} className="outline-none shrink-0" />
           </div>
         </div>
+        <div className="print:hidden">
+          <StatusBar editor={editor} zoom={zoom} setZoom={setZoom} />
+        </div>
       </div>
       
       {/* Toast Notification */}
       <div className={`fixed bottom-8 right-8 bg-gray-900/90 text-white px-4 py-2.5 rounded-lg shadow-xl flex items-center space-x-2 transition-all duration-300 transform ${showToast ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}>
         <CheckCircle2 className="w-4 h-4 text-green-400" />
-        <span className="text-sm font-medium">Saved to local storage</span>
+        <span className="text-sm font-medium">{saveMessage}</span>
       </div>
     </div>
   );

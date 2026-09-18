@@ -1,28 +1,69 @@
 # Security and Privacy
 
-## Threat model and controls
+## Threat model
 
-- Authorization: production sessions use Supabase Auth. Route handlers derive the user from the server session, apply role checks, and rely on RLS as a second boundary.
-- Input: Zod schemas validate query, JSON, CSV mappings, IDs, and lifecycle transitions. SQL access uses the Supabase client/parameterized APIs.
-- Abuse: a typed rate-limit port uses an in-memory local implementation and Upstash Redis in production. Reports, leads, auth, imports, and job endpoints have distinct limits.
-- Browser safety: React escaping is the default; provider HTML is not rendered. CSP and security headers restrict scripts, frames, MIME sniffing, referrers, and browser permissions.
-- Uploads: production uses signed upload URLs, an allowlist for MIME/extensions, byte limits, image decoding/re-encoding, and a malware-scanning adapter. Review metadata references hosted identity workflows; raw sensitive identity files are not stored.
-- Jobs/webhooks: signed requests, replay-safe webhook rows, and idempotency keys are required. Logs redact credentials and unnecessary PII.
-- Auditability: provider verification, listing moderation, merges/unmerges, suspension, settings, and reindex actions write immutable audit events.
+Escribe Libre is local-first, so the interesting boundaries are not network
+boundaries. The content a user opens is the untrusted input: a pasted fragment,
+an HTML file, or a Word document can all carry markup that must never execute in
+the editor's origin.
 
-## Data minimization
+## Controls
 
-The application does not collect or store Social Security numbers, credit/criminal/eviction reports, bank credentials, card data, biometric templates, unencrypted government IDs, or tenant-screening documents. Renter email and provider private contact details are not public. Analytics excludes message bodies, documents, tokens, and exact sensitive location.
+- **Paste.** Every paste is sanitised with DOMPurify before Tiptap sees it.
+  `script`, `iframe`, `object`, and `embed` are dropped in all three paste
+  modes. "Match document" additionally strips `style`, `class`, `color`,
+  `face`, and `size` attributes and unwraps `span`/`font`.
+- **HTML import.** Same sanitiser, same forbidden tags, applied to the file's
+  text before `setContent`.
+- **DOCX import.** `POST /api/import/docx` accepts only a `.docx` extension with
+  a matching MIME type, rejects anything over 20 MB or empty, converts with
+  mammoth, and sanitises the resulting HTML server-side before returning it.
+  A conversion failure returns a typed error, never a stack trace.
+- **Storage.** Every record read from IndexedDB or a `.textdoc` file is parsed
+  with a Zod schema. A malformed or hand-edited entry is rejected rather than
+  rendered, which also bounds title, comment, and header/footer lengths.
+- **Browser safety.** React escaping is the default and no user content is
+  rendered with `dangerouslySetInnerHTML`. `next.config.ts` sets a strict CSP
+  plus `Referrer-Policy`, `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+  `Permissions-Policy`, and `Cross-Origin-Opener-Policy`.
+- **Outbound requests.** The app makes none by default. `connect-src` allows
+  only the app's own origin and Supabase, for the optional sync mode.
+- **Links and images.** Documents may reference remote images, which is why
+  `img-src` allows `https:`. Remote images are a privacy consideration: opening
+  a document containing one will fetch it. Links are rendered but not followed
+  automatically.
 
-## Housing and ranking safety
+## Data handling
 
-Protected characteristics and discriminatory proxies are not collected for ranking or targeting. Natural-language filters reject protected-class criteria. Rules-based content scanning creates a moderation flag rather than silently rewriting speech. Voucher acceptance and accessibility details are labeled provider-reported. No neighborhood safety or demographic score exists.
+In the default mode, no document, title, comment, or keystroke leaves the
+device. There is no account, no telemetry, and no analytics. Documents live in
+this browser profile's IndexedDB and preferences in `localStorage`.
 
-## Operational requirements before production
+That has a consequence worth stating plainly: clearing site data, using a
+private window, or a browser "clean up storage" sweep deletes documents
+permanently. There is no server copy to restore from. **Backup all** writes a
+`.textdoc-backup` file, and it is the only recovery mechanism.
 
-- Enable Supabase MFA for provider/admin accounts and review every RLS policy with integration tests.
-- Configure hosted identity verification if identity checks are enabled; never accept raw documents through generic uploads.
-- Configure secrets only in the deployment secret store, rotate webhook/signing keys, and enable Supabase point-in-time recovery.
-- Run dependency/secret scanning, migration validation, Playwright/axe smoke tests, and incident-response exercises.
-- Publish retention periods and complete data export/deletion workflows before accepting real users.
+Files you export are written by the browser's download flow to wherever the
+browser is configured to put them; the app does not choose a location and keeps
+no copy.
 
+## Optional sync mode
+
+`APP_DATA_MODE=supabase` changes the trust model: documents then leave the
+device. Before enabling it:
+
+- Review every row-level security policy in `supabase/migrations` with
+  integration tests; the document ACL is the whole authorisation model.
+- Enable MFA on accounts that can read shared documents.
+- Configure secrets only in the deployment secret store and rotate keys.
+- Enable point-in-time recovery and rehearse a restore.
+
+The service-role key must never reach the browser. It is read only in
+`src/lib/supabase/server.ts` and is not part of the public env schema.
+
+## Reporting
+
+Report a suspected vulnerability privately to the repository owner rather than
+opening a public issue. Please include the affected version, a reproduction, and
+what an attacker would gain.

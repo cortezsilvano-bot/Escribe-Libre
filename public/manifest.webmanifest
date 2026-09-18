@@ -1,10 +1,10 @@
 {
-  "name": "Rental Marketplace",
-  "short_name": "Rentals",
-  "description": "Transparent Houston rental discovery with source and cost details.",
+  "name": "Escribe Libre",
+  "short_name": "Escribe",
+  "description": "A local-first word processor with page layout, comments, versions, and DOCX export.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fffefa",
-  "theme_color": "#123f3a",
-  "icons": [{ "src": "/rental-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "background_color": "#0e1116",
+  "theme_color": "#12141a",
+  "icons": [{ "src": "/textdoc-icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }

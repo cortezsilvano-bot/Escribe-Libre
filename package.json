@@ -10,14 +10,14 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e && pnpm build",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run test:e2e && npm run build",
     "verify:env": "node scripts/verify-environment.mjs",
-    "desktop:prepare-sidecar": "node scripts/prepare-desktop-sidecar.mjs",
     "desktop:dev": "scripts\\run-tauri.cmd dev",
-    "desktop:build": "scripts\\run-tauri.cmd build"
+    "desktop:build": "scripts\\run-tauri.cmd build",
+    "release:check": "npm run typecheck && npm run lint && npm run test && npm run test:e2e && npm run build && npm --prefix upgrade run lint && npm --prefix upgrade run build",
+    "release:desktop": "npm run build && npm --prefix upgrade run build && npm run desktop:build"
   },
   "dependencies": {
-    "@hookform/resolvers": "latest",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.108.2",
     "@tiptap/core": "^3.30.2",
@@ -44,7 +44,6 @@
     "prosemirror-view": "^1.42.1",
     "react": "latest",
     "react-dom": "latest",
-    "react-hook-form": "latest",
     "zod": "latest"
   },
   "devDependencies": {
@@ -57,7 +56,6 @@
     "@types/react-dom": "latest",
     "eslint": "9.39.2",
     "eslint-config-next": "latest",
-    "tailwindcss": "latest",
     "typescript": "5.9.3",
     "vitest": "^4.1.9"
   },

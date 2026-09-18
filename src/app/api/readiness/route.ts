@@ -1,2 +1,21 @@
 import { ok } from "@/lib/api/response";
-export async function GET() { const mode = process.env.APP_DATA_MODE ?? "mock"; return ok({ status: "ready", mode, dependencies: { fixtures: { ready: true, count: 108 }, supabase: { ready: mode === "mock" || Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) }, typesense: { ready: mode === "mock" || Boolean(process.env.TYPESENSE_HOST), optionalFallback: "postgres" }, mapbox: { ready: Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN), optionalFallback: "accessible list + illustrative map" }, email: { ready: Boolean(process.env.RESEND_API_KEY), optionalFallback: "local preview" } } }); }
+
+export async function GET() {
+  const mode = process.env.APP_DATA_MODE ?? "mock";
+
+  return ok({
+    status: "ready",
+    mode,
+    dependencies: {
+      // The editor stores documents in IndexedDB, so the app is usable with no
+      // backing services at all.
+      localStorage: { ready: true, required: true },
+      docxImport: { ready: true, required: true },
+      supabase: {
+        ready: mode === "mock" || Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        required: mode === "supabase",
+        optionalFallback: "local-only documents",
+      },
+    },
+  });
+}

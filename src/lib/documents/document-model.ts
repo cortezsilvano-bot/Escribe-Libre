@@ -127,7 +127,8 @@ export const defaultEditorContent = {
                 { type: "text", text: "Advanced typography (" },
                 { type: "text", text: "superscript" },
                 { type: "text", text: ", subscript, " },
-                { type: "text", marks: [{ type: "textStyle", attrs: { color: "#ff0000" } }], text: "colored text" },
+                // Dark enough to clear WCAG AA against the page background.
+                { type: "text", marks: [{ type: "textStyle", attrs: { color: "#b30000" } }], text: "colored text" },
                 { type: "text", text: ", " },
                 { type: "text", marks: [{ type: "highlight", attrs: { color: "#fff200" } }], text: "highlights" },
                 { type: "text", text: ")" },
