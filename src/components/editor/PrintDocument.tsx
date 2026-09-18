@@ -71,7 +71,7 @@ export function PrintDocument({ documentId }: PrintDocumentProps) {
   return (
     <main className="print-shell">
       <header className="print-header">
-        <NextLink className="toolbar-button" href={`/documents/${documentId}`}>
+        <NextLink className="toolbar-button" href={`/editor?doc=${documentId}`}>
           <ArrowLeft size={16} />
           Editor
         </NextLink>

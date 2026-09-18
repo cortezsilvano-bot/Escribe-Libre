@@ -9,11 +9,12 @@ below can be copy-pasted as-is.
 
 | If you run… | You get |
 |---|---|
-| `npm run dev` (the main app) | The **word processor**: document dashboard at `/`, editor at `/documents/<id>` |
-| `npm run dev` inside `upgrade/` | A **standalone single-document editor**, the one the desktop build packages |
+| `npm run dev` (the main app) | The **word processor**: document dashboard at `/`, editor at `/editor?doc=<id>` |
+| `npm run dev` inside `upgrade/` | An older **standalone single-document editor**, kept for reference |
 
-Both are the same product at different scopes. The main app adds the document
-library, templates, backups, versions, comments, and the print view.
+The main app is the product: it has the document library, templates, backups,
+versions, comments, and the print view, and it is what the desktop installer
+now ships. `upgrade/` predates it and is no longer part of the release.
 
 ---
 
@@ -101,9 +102,9 @@ external services, which is what you want for a first run.
 
 ## Part 2 — Run the standalone editor
 
-This is the single-document editor the desktop build packages. It lives in its
-own folder with its own dependencies and does **not** share the main app's
-install.
+An older single-document editor, kept for reference. It lives in its own folder
+with its own dependencies and does **not** share the main app's install. The
+desktop installer no longer packages it.
 
 ```bash
 cd upgrade
@@ -156,7 +157,8 @@ never prefix it with `NEXT_PUBLIC_`.
 
 ## Part 4 — Optional: build the desktop app
 
-The desktop shell uses [Tauri 2](https://tauri.app) and bundles `upgrade/dist`.
+The desktop shell uses [Tauri 2](https://tauri.app) and bundles the word
+processor as a static export.
 
 **Extra prerequisites:**
 
@@ -173,10 +175,11 @@ npm run desktop:build    # produce an installer
 npm run release:desktop  # full build, then the installer
 ```
 
-> **Known blocker:** `docs/desktop.md` records that the Windows binary build is
-> blocked pending a successful MSVC and Windows SDK install (the Build Tools
-> installer failed with `0x80070070`, `ERROR_DISK_FULL`). The JavaScript
-> production build can still be verified with `npm --prefix upgrade run build`.
+The build produces an NSIS `-setup.exe` and a WiX `.msi` under
+`src-tauri/target/release/bundle/`. If the MSI step fails with
+`Access is denied (os error 5)`, a previous `.msi` is still locked by another
+process; close it (or any running installer) and build again. The NSIS installer
+is unaffected.
 
 Prebuilt installers are not kept in this repository. They are build artifacts
 and belong in GitHub Releases.

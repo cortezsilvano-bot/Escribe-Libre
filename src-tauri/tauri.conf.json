@@ -4,10 +4,10 @@
   "version": "0.2.2",
   "identifier": "com.escribelibre.desktop",
   "build": {
-    "beforeDevCommand": "npm --prefix upgrade run dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3000",
-    "beforeBuildCommand": "npm --prefix upgrade run build",
-    "frontendDist": "../upgrade/dist"
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../out"
   },
   "app": {
     "windows": [
@@ -21,14 +21,14 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
     }
   },
   "bundle": {
     "active": true,
     "category": "Productivity",
-    "shortDescription": "A focused local document editor",
-    "longDescription": "Escribe Libre is a private, focused document editor with rich text editing and local export tools.",
+    "shortDescription": "A local-first word processor",
+    "longDescription": "Escribe Libre is a private, local-first word processor with page layout, comments, version snapshots, and DOCX, HTML and PDF export. Documents stay on your device.",
     "publisher": "Escribe Libre",
     "copyright": "Copyright (c) 2026 Escribe Libre",
     "icon": [
@@ -38,7 +38,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "windows": {
       "nsis": {
         "displayLanguageSelector": false,

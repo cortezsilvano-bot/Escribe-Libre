@@ -15,10 +15,10 @@ the editor's origin.
   `face`, and `size` attributes and unwraps `span`/`font`.
 - **HTML import.** Same sanitiser, same forbidden tags, applied to the file's
   text before `setContent`.
-- **DOCX import.** `POST /api/import/docx` accepts only a `.docx` extension with
-  a matching MIME type, rejects anything over 20 MB or empty, converts with
-  mammoth, and sanitises the resulting HTML server-side before returning it.
-  A conversion failure returns a typed error, never a stack trace.
+- **DOCX import.** `convertDocxToHtml` accepts only a `.docx` extension, rejects
+  anything empty or over 20 MB, converts with mammoth in the browser, and
+  sanitises the resulting HTML before it is inserted. The file never leaves the
+  device, and a conversion failure surfaces a plain message, not a stack trace.
 - **Storage.** Every record read from IndexedDB or a `.textdoc` file is parsed
   with a Zod schema. A malformed or hand-edited entry is rejected rather than
   rendered, which also bounds title, comment, and header/footer lengths.

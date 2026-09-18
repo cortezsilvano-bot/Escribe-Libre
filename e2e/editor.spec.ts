@@ -5,7 +5,7 @@ test("dashboard creates a document and opens the editor", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   await page.getByRole("button", { name: "New document" }).click();
-  await expect(page).toHaveURL(/\/documents\/[\w-]+$/);
+  await expect(page).toHaveURL(/\/editor\?doc=[\w-]+/);
 
   await expect(page.getByLabel("Document title")).toBeVisible();
   await expect(page.locator(".page-frame")).toBeVisible();
@@ -77,6 +77,6 @@ test("primary views have no serious automated accessibility violations", async (
   results = await new AxeBuilder({ page }).analyze();
   expect(
     results.violations.filter((v) => ["serious", "critical"].includes(v.impact ?? "")),
-    "/documents/:id",
+    "/editor",
   ).toEqual([]);
 });

@@ -4,16 +4,16 @@
 
 Escribe Libre is a Next.js App Router application whose product logic runs in
 the browser. The document model, editing commands, pagination, export, and
-persistence are all client-side modules; the server exists to serve the app and
-to run the one conversion that needs a Node runtime.
+persistence are all client-side modules. Nothing about editing needs a server,
+which is why the same code ships as a web app and as a desktop bundle.
 
 ```text
 Browser
   |
   |-- React / Next.js App Router pages
   |     /                      -> document dashboard
-  |     /documents/[id]        -> editor
-  |     /documents/[id]/print  -> print + PDF view
+  |     /editor?doc=<id>       -> editor
+  |     /print?doc=<id>        -> print + PDF view
   |
   |-- Editor core (Tiptap + ProseMirror)
   |     extensions: inline comments, page break, spellcheck indicator
@@ -25,8 +25,7 @@ Browser
         `-> IndexedDB adapter (idb-keyval)      [default]
         `-> Supabase adapter                    [optional, APP_DATA_MODE=supabase]
 
-Server (Next.js route handlers)
-  POST /api/import/docx   -> mammoth conversion + server-side sanitisation
+Server (web build only; the desktop build is a static export)
   GET  /api/health, /api/readiness
 ```
 
@@ -37,8 +36,8 @@ Server (Next.js route handlers)
 - Every record crossing a persistence boundary is parsed with a Zod schema
   (`documentRecordSchema`, `documentVersionSchema`, `documentCommentSchema`), so
   a corrupt or hand-edited entry is rejected rather than rendered.
-- All pasted and imported HTML is sanitised before it reaches the editor:
-  in the browser for paste and HTML import, and again on the server for DOCX.
+- All pasted and imported HTML is sanitised in the browser before it reaches
+  the editor, on every path: paste, HTML import, and DOCX import.
 - Page geometry is derived from `PageSettings` by the pagination module, never
   from ad-hoc CSS in components.
 
@@ -87,7 +86,14 @@ demand. Restoring one writes it back as the current document.
 
 ## Deployment
 
-The app builds to a standalone Next.js server (`output: "standalone"`) and runs
-anywhere Node runs; the only route needing a server is the DOCX import. Security
-headers and a strict Content-Security-Policy are set in `next.config.ts`. The
-desktop build is a separate Tauri bundle of the `upgrade/` Vite app.
+Two builds come out of one codebase, selected by `DESKTOP_BUILD`:
+
+- **Web** (`npm run build`) emits a standalone Next.js server that runs anywhere
+  Node runs, keeping the security headers and the health/readiness handlers.
+- **Desktop** (`npm run build:desktop`) emits a static export to `out/`, which
+  Tauri bundles. `pageExtensions` drops the `.ts` route handlers from this build,
+  since a static bundle cannot host them.
+
+Security headers and a strict Content-Security-Policy are set in
+`next.config.ts` for the web build, and in `src-tauri/tauri.conf.json` for the
+desktop shell.

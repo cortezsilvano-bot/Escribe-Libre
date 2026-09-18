@@ -9,10 +9,8 @@
 ## What actually needs a server
 
 Almost nothing. The editor runs in the browser and stores documents there, so a
-deployment is mostly static delivery plus one route handler:
+deployment is mostly static delivery. The only server endpoints are:
 
-- `POST /api/import/docx` converts an uploaded Word file with mammoth. It needs
-  the Node runtime and is the only route that does real work.
 - `GET /api/health` and `GET /api/readiness` are for your monitoring.
 
 `next.config.ts` sets `output: "standalone"`, so `next build` emits a

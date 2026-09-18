@@ -38,6 +38,7 @@ import {
   saveDocument,
   updateDocumentComment,
 } from "@/lib/documents/document-store";
+import { convertDocxToHtml } from "@/lib/documents/docx-import";
 import { downloadTextdocFile } from "@/lib/documents/textdoc-file";
 import { getCharacterCountFromJson, getWordCountFromJson } from "@/lib/editor/text-index";
 import { getEditorExtensions } from "@/lib/editor/editor-extensions";
@@ -357,31 +358,20 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    const response = await fetch("/api/import/docx", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: { message?: string } }
-        | null;
-      showToast(payload?.error?.message ?? "Could not import DOCX file.", "error");
-      return;
+    try {
+      const { html, warnings } = await convertDocxToHtml(file);
+      editor.commands.setContent(html);
+      showToast(warnings.length ? warnings.join(" ") : "DOCX imported.", "success");
+    } catch (importError) {
+      showToast(
+        importError instanceof Error ? importError.message : "Could not import DOCX file.",
+        "error",
+      );
     }
-
-    const payload = (await response.json()) as { data: { html: string; warnings: string[] } };
-    editor.commands.setContent(payload.data.html);
-    showToast(
-      payload.data.warnings.length ? payload.data.warnings.join(" ") : "DOCX imported.",
-      "success",
-    );
   }
 
   function printDocument() {
-    window.open(`/documents/${documentId}/print`, "_blank", "noopener,noreferrer");
+    router.push(`/print?doc=${encodeURIComponent(documentId)}`);
   }
 
   function canLeaveDocument() {

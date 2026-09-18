@@ -119,7 +119,7 @@ export function Dashboard() {
   async function handleCreate() {
     const created = await createDocument("Untitled document");
     const doc = await importDocument(applyLocalSettingsToRecord(created, settings));
-    router.push(`/documents/${doc.id}`);
+    router.push(`/editor?doc=${doc.id}`);
   }
 
   async function handleTemplate(templateId: string) {
@@ -129,14 +129,14 @@ export function Dashboard() {
     }
 
     const doc = await importDocument(applyLocalSettingsToRecord(template.create(), settings));
-    router.push(`/documents/${doc.id}`);
+    router.push(`/editor?doc=${doc.id}`);
   }
 
   async function handleImport(file: File) {
     try {
       const record = await readTextdocFile(file);
       const imported = await importDocument(record);
-      router.push(`/documents/${imported.id}`);
+      router.push(`/editor?doc=${imported.id}`);
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Could not open .textdoc file.");
     }
@@ -347,7 +347,7 @@ export function Dashboard() {
           <div className="document-grid">
             {visibleDocuments.map((document) => (
               <article className="document-card" key={document.id}>
-                <Link href={`/documents/${document.id}`} className="document-card-link">
+                <Link href={`/editor?doc=${document.id}`} className="document-card-link">
                   <FileText size={22} />
                   <div>
                     <h3>{document.title}</h3>

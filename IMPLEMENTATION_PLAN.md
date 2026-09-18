@@ -50,14 +50,14 @@ storage boundary is schema-validated.
 ### Milestone 3 - files and history
 
 - [x] Export DOCX, HTML, TXT, and `.textdoc`; back up and restore all documents.
-- [x] Import `.textdoc`, HTML, and DOCX (`POST /api/import/docx`, sanitised
-      server-side).
+- [x] Import `.textdoc`, HTML, and DOCX (converted and sanitised in the browser).
 - [x] Named version snapshots with restore and delete.
-- [x] Print/PDF view at `/documents/[id]/print`.
+- [x] Print/PDF view at `/print?doc=<id>`.
 
 ### Milestone 4 - routing and shell
 
-- [x] `/` dashboard, `/documents/[id]` editor, `/documents/[id]/print`.
+- [x] `/` dashboard, `/editor?doc=<id>`, `/print?doc=<id>`; all statically
+      exportable so the desktop shell ships the same app.
 - [x] Metadata, manifest, robots, sitemap, offline service worker.
 - [x] Security headers and CSP scoped to what the editor actually needs.
 - [x] Health and readiness endpoints.

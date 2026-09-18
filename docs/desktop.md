@@ -1,31 +1,68 @@
 # Escribe Libre Desktop
 
-The desktop shell uses Tauri 2 and packages the standalone Vite editor from `upgrade/`.
+The desktop shell uses Tauri 2 and packages the word processor itself — the same
+app you get on the web, built as a static export.
+
+## How it is wired
+
+`npm run build:desktop` runs `next build` with `DESKTOP_BUILD=1`, which switches
+`next.config.ts` to `output: "export"` and writes a static bundle to `out/`.
+`src-tauri/tauri.conf.json` points `frontendDist` at `../out`, so the installer
+carries the dashboard, editor, and print view.
+
+Because a static bundle cannot host route handlers, that build also narrows
+`pageExtensions` to `.tsx`, which drops `/api/health`, `/api/readiness`, and the
+robots/sitemap metadata routes. None of them are meaningful in a desktop app.
+Everything else works offline, including DOCX import, which runs in the browser.
+
+Documents live in the installed application's own local storage profile, not in
+the installation directory.
+
+> `upgrade/` is an older standalone single-document editor. It is no longer part
+> of the desktop release.
 
 ## Prerequisites
 
 - Rust toolchain with `cargo` and `rustc`.
 - Visual Studio Build Tools with MSVC and a Windows SDK.
-- Node dependencies installed with `npm install` at the repository root and in `upgrade/`
+- Node dependencies installed with `npm install` at the repository root.
 
-On this machine, Rust was installed under the user cargo bin and the stable toolchain can be used with:
-
-```powershell
-$env:RUSTUP_HOME = "F:\APPs_DEV\rustup"
-$env:CARGO_HOME = "$env:USERPROFILE\.cargo"
-```
-
-The Visual Studio Build Tools installer failed with `0x80070070`, which is Windows error `ERROR_DISK_FULL`. Free space on `C:` is required even when the installer target and temp folder are moved to another drive.
+`scripts/run-tauri.cmd` locates Visual Studio with `vswhere`, falls back to
+`F:\VSBuildTools`, puts `%USERPROFILE%\.cargo\bin` on `PATH`, and redirects
+`TEMP` beside the repository so the build does not fill `C:`.
 
 ## Commands
 
 ```bash
-npm run desktop:dev
-npm run desktop:build
+npm run desktop:dev      # run the shell against the dev server
+npm run desktop:build    # produce installers
+npm run release:desktop  # full build, then installers
 ```
 
-## Packaging Strategy
+## Output
 
-The desktop release is self-contained: Tauri bundles the compiled `upgrade/dist` frontend and embeds the existing icon assets in the executable and Windows installers. Runtime document content is kept in browser storage owned by the installed application profile, not in the installation directory.
+```
+src-tauri/target/release/bundle/
+├── nsis/Escribe Libre_<version>_x64-setup.exe    <- the installer most people want
+└── msi/Escribe Libre_<version>_x64_en-US.msi     <- for managed deployment
+```
 
-The installer build is currently blocked on this machine until the Rust toolchain, MSVC compiler, and Windows SDK are available on `PATH`. The JavaScript production build can still be verified independently with `npm --prefix upgrade run build`.
+These are build artifacts. `.gitignore` excludes `src-tauri/target/`, so ship
+them through GitHub Releases rather than committing them.
+
+## Troubleshooting
+
+**`failed to bundle project: Access is denied. (os error 5)` during the MSI
+step.** A previous `.msi` at that path is still locked by another process, and
+WiX cannot overwrite it. Close anything holding it — an open installer, an
+Explorer preview pane, or an antivirus scan — then build again. The NSIS
+installer is produced before this step and is unaffected.
+
+**`link.exe` not found, or MSVC errors.** The Visual Studio Build Tools are
+missing or `vswhere` did not find them. Install the "Desktop development with
+C++" workload with the Windows SDK. A past install attempt on this machine
+failed with `0x80070070` (`ERROR_DISK_FULL`); free space on `C:` is required
+even when the install target and temp folder are moved to another drive.
+
+**The installer runs but the window is blank.** `out/` is missing or stale. Run
+`npm run build:desktop` and confirm `out/index.html` exists before bundling.

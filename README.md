@@ -31,7 +31,7 @@ npm run dev
 ```
 
 Open `http://localhost:3000`. The dashboard lists your documents; **New
-document** or any template opens the editor at `/documents/<id>`.
+document** or any template opens the editor at `/editor?doc=<id>`.
 
 No environment file is required. `.env.example` documents the optional
 Supabase variables used only when you enable account-backed sync.
@@ -66,9 +66,9 @@ manager consistently per checkout.
 
 ## Desktop release
 
-The desktop app is a self-contained Tauri bundle of `upgrade/dist`. It does not
-depend on the source directory or a separately installed Node runtime at
-runtime.
+The desktop app is a self-contained Tauri bundle of the word processor,
+built as a static export (`npm run build:desktop` -> `out/`). It does not
+depend on the source directory or a Node runtime at runtime.
 
 ```bash
 npm run desktop:dev
@@ -85,8 +85,8 @@ toolchain and Visual Studio C++ workload are installed. See
 Next.js App Router with strict TypeScript. The editor is a client component
 tree over Tiptap; persistence is an IndexedDB repository behind a narrow
 `DocumentRepository` port, so a server-backed implementation can be added
-without touching the editor. The only server work is `POST /api/import/docx`,
-which converts an uploaded Word file to sanitised HTML.
+without touching the editor. DOCX import also runs in the browser, so the app
+builds as a pure static bundle for the desktop shell.
 
 Read [`ARCHITECTURE.md`](ARCHITECTURE.md), [`DATA_MODEL.md`](DATA_MODEL.md),
 [`SECURITY.md`](SECURITY.md), [`ENVIRONMENT.md`](ENVIRONMENT.md), and the
