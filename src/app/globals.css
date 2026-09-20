@@ -445,7 +445,9 @@ img { max-width: 100%; }
 .glass-highlight.left { left: -80px; background: radial-gradient(circle, var(--accent), transparent 68%); }
 .glass-highlight.right { right: -80px; background: radial-gradient(circle, var(--accent-2), transparent 68%); }
 
-.editor-header { position: relative; z-index: 1; padding: 12px 18px 0; }
+/* Above .editor-ribbon-frame, so the File menu popover is not covered by the
+   ribbon that follows it in the DOM. */
+.editor-header { position: relative; z-index: 3; padding: 12px 18px 0; }
 
 .upgrade-title-row {
   display: flex;
@@ -554,6 +556,21 @@ img { max-width: 100%; }
   text-align: left;
 }
 .file-menu-popover button:hover { color: var(--text); background: var(--panel-2); }
+.file-menu-popover button > svg { flex: 0 0 auto; }
+.file-menu-popover kbd {
+  margin-left: auto;
+  padding-left: 18px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.file-menu-popover hr {
+  height: 1px;
+  margin: 5px 6px;
+  border: 0;
+  background: var(--line);
+}
 
 .editor-ribbon-frame { position: relative; z-index: 1; padding: 8px 12px 12px; }
 

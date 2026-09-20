@@ -8,10 +8,13 @@ import {
   CircleUserRound,
   Download,
   FileInput,
+  FilePlus,
   FileText,
+  FolderOpen,
   Moon,
   PanelLeft,
   PanelRight,
+  Printer,
   Save,
   Star,
   Sun,
@@ -28,24 +31,32 @@ import type {
 } from "@/lib/documents/document-model";
 import { defaultEditorContent, defaultPageSettings } from "@/lib/documents/document-model";
 import {
+  createDocument,
   createDocumentComment,
   createDocumentVersion,
   deleteDocumentComment,
   deleteDocumentVersion,
   ensureDocument,
   listDocumentComments,
+  importDocument,
   listDocumentVersions,
   saveDocument,
   updateDocumentComment,
 } from "@/lib/documents/document-store";
 import { convertDocxToHtml } from "@/lib/documents/docx-import";
-import { downloadTextdocFile } from "@/lib/documents/textdoc-file";
+import { downloadTextdocFile, readTextdocFile, textdocAccept } from "@/lib/documents/textdoc-file";
 import { getCharacterCountFromJson, getWordCountFromJson } from "@/lib/editor/text-index";
 import { getEditorExtensions } from "@/lib/editor/editor-extensions";
 import { createDocxBlob } from "@/lib/export/docx-export";
 import { downloadBlob, safeFileStem } from "@/lib/export/file-download";
 import { getPageDimensions, getPageStyle } from "@/lib/pagination/page-settings";
-import { applyTheme, getLocalSettings, saveLocalSettings, type LocalSettings } from "@/lib/settings/local-settings";
+import {
+  applyLocalSettingsToRecord,
+  applyTheme,
+  getLocalSettings,
+  saveLocalSettings,
+  type LocalSettings,
+} from "@/lib/settings/local-settings";
 import { EditorRibbon, type PasteMode } from "./EditorRibbon";
 import { EditorSidebar } from "./EditorSidebar";
 import { FloatingSelectionToolbar } from "./FloatingSelectionToolbar";
@@ -119,6 +130,7 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
   const [theme, setTheme] = useState<LocalSettings["theme"]>("neon-dark");
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const docxInputRef = useRef<HTMLInputElement>(null);
+  const textdocInputRef = useRef<HTMLInputElement>(null);
   const saveTimer = useRef<number | null>(null);
   const autosaveDelay = useRef(600);
   const hasPendingSave = useRef(false);
@@ -370,6 +382,28 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     }
   }
 
+  async function handleNewDocument() {
+    if (!canLeaveDocument()) {
+      const shouldLeave = window.confirm("This document is still saving or has a save error. Leave anyway?");
+      if (!shouldLeave) {
+        return;
+      }
+    }
+
+    const created = await createDocument("Untitled document");
+    const next = await importDocument(applyLocalSettingsToRecord(created, getLocalSettings()));
+    router.push(`/editor?doc=${next.id}`);
+  }
+
+  async function handleOpenTextdoc(file: File) {
+    try {
+      const opened = await importDocument(await readTextdocFile(file));
+      router.push(`/editor?doc=${opened.id}`);
+    } catch (openError) {
+      showToast(openError instanceof Error ? openError.message : "Could not open .textdoc file.", "error");
+    }
+  }
+
   function printDocument() {
     router.push(`/print?doc=${encodeURIComponent(documentId)}`);
   }
@@ -563,6 +597,10 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
         event.preventDefault();
         printDocument();
       }
+      if (key === "n") {
+        event.preventDefault();
+        void handleNewDocument();
+      }
       if (event.altKey && key === "b") {
         event.preventDefault();
         editor?.chain().focus().setPageBreak().run();
@@ -628,6 +666,16 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
               </button>
               {showFileMenu ? (
                 <div className="file-menu-popover">
+                  <button aria-keyshortcuts="Control+N" onClick={() => { void handleNewDocument(); setShowFileMenu(false); }} type="button">
+                    <FilePlus size={15} />
+                    New document
+                    <kbd aria-hidden="true">Ctrl N</kbd>
+                  </button>
+                  <button onClick={() => { textdocInputRef.current?.click(); setShowFileMenu(false); }} type="button">
+                    <FolderOpen size={15} />
+                    Open .textdoc
+                  </button>
+                  <hr />
                   <button onClick={() => { htmlInputRef.current?.click(); setShowFileMenu(false); }} type="button">
                     <FileInput size={15} />
                     Import HTML
@@ -635,6 +683,12 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
                   <button onClick={() => { docxInputRef.current?.click(); setShowFileMenu(false); }} type="button">
                     <FileText size={15} />
                     Import DOCX
+                  </button>
+                  <hr />
+                  <button aria-keyshortcuts="Control+S" onClick={() => { void exportTextdoc(); setShowFileMenu(false); }} type="button">
+                    <Save size={15} />
+                    Save .textdoc
+                    <kbd aria-hidden="true">Ctrl S</kbd>
                   </button>
                   <button onClick={() => { exportText(); setShowFileMenu(false); }} type="button">
                     <FileText size={15} />
@@ -648,13 +702,20 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
                     <Download size={15} />
                     Export DOCX
                   </button>
-                  <button onClick={() => { void exportTextdoc(); setShowFileMenu(false); }} type="button">
-                    <Save size={15} />
-                    Save .textdoc
+                  <hr />
+                  <button onClick={() => { setShowFileMenu(false); window.print(); }} type="button">
+                    <Printer size={15} />
+                    Print
                   </button>
-                  <button onClick={() => { printDocument(); setShowFileMenu(false); }} type="button">
-                    <Download size={15} />
-                    Download PDF
+                  <button aria-keyshortcuts="Control+P" onClick={() => { printDocument(); setShowFileMenu(false); }} type="button">
+                    <FileText size={15} />
+                    Print preview / PDF
+                    <kbd aria-hidden="true">Ctrl P</kbd>
+                  </button>
+                  <hr />
+                  <button onClick={() => { goBackToDashboard(); setShowFileMenu(false); }} type="button">
+                    <ArrowLeft size={15} />
+                    Back to documents
                   </button>
                 </div>
               ) : null}
@@ -675,6 +736,19 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
               <ChevronDown size={13} />
             </button>
           </nav>
+          <input
+            accept={textdocAccept}
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                void handleOpenTextdoc(file);
+              }
+              event.currentTarget.value = "";
+            }}
+            ref={textdocInputRef}
+            type="file"
+          />
           <input
             accept=".html,.htm,text/html"
             hidden
