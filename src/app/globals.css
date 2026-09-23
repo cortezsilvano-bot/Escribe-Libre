@@ -529,8 +529,8 @@ img { max-width: 100%; }
 .menu-link.active { color: var(--accent-ink); background: var(--accent-soft); }
 .help-link { display: inline-flex; align-items: center; gap: 4px; }
 
-.file-menu-wrap { position: relative; }
-.file-menu-popover {
+.menu-wrap { position: relative; }
+.menu-popover {
   position: absolute;
   z-index: 60;
   top: calc(100% + 6px);
@@ -543,7 +543,7 @@ img { max-width: 100%; }
   background: var(--panel-solid);
   box-shadow: var(--shadow);
 }
-.file-menu-popover button {
+.menu-popover button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -555,9 +555,12 @@ img { max-width: 100%; }
   font-size: 13px;
   text-align: left;
 }
-.file-menu-popover button:hover { color: var(--text); background: var(--panel-2); }
-.file-menu-popover button > svg { flex: 0 0 auto; }
-.file-menu-popover kbd {
+.menu-popover button:hover:not(:disabled) { color: var(--text); background: var(--panel-2); }
+.menu-popover button:disabled { color: var(--muted); cursor: default; }
+.menu-check { flex: 0 0 auto; margin-left: auto; color: var(--accent); }
+.menu-check + kbd { margin-left: 10px; }
+.menu-popover button > svg { flex: 0 0 auto; }
+.menu-popover kbd {
   margin-left: auto;
   padding-left: 18px;
   color: var(--muted);
@@ -565,7 +568,7 @@ img { max-width: 100%; }
   font-size: 11px;
   white-space: nowrap;
 }
-.file-menu-popover hr {
+.menu-popover hr {
   height: 1px;
   margin: 5px 6px;
   border: 0;

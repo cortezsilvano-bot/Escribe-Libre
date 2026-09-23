@@ -71,7 +71,7 @@ test("File menu offers New document, Open and Print", async ({ page }) => {
   await expect(page.locator(".prose-editor")).toBeVisible();
 
   await page.getByRole("button", { name: "File", exact: true }).click();
-  const menu = page.locator(".file-menu-popover");
+  const menu = page.locator(".menu-popover");
   await expect(menu).toBeVisible();
 
   for (const item of [
@@ -98,7 +98,7 @@ test("File > New document creates a second document", async ({ page }) => {
   await page.waitForTimeout(1200);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
-  await page.locator(".file-menu-popover").getByRole("button", { name: "New document", exact: true }).click();
+  await page.locator(".menu-popover").getByRole("button", { name: "New document", exact: true }).click();
 
   await expect(page).not.toHaveURL(firstUrl);
   await expect(page.locator(".prose-editor")).toBeVisible();
@@ -116,7 +116,7 @@ test("File > Print preview opens the print view", async ({ page }) => {
   await page.waitForTimeout(1200);
 
   await page.getByRole("button", { name: "File", exact: true }).click();
-  await page.locator(".file-menu-popover")
+  await page.locator(".menu-popover")
     .getByRole("button", { name: "Print preview / PDF", exact: true })
     .click();
 
@@ -126,6 +126,66 @@ test("File > Print preview opens the print view", async ({ page }) => {
 
   await page.getByRole("link", { name: "Editor" }).click();
   await expect(page).toHaveURL(/\/editor\?doc=/);
+});
+
+test("every menu opens its own entries, not the command palette", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "New document" }).click();
+  await expect(page.locator(".prose-editor")).toBeVisible();
+
+  const menu = page.locator(".menu-popover");
+
+  // Each menu must show something specific to itself.
+  const expected: Array<[string, string]> = [
+    ["Edit", "Select all"],
+    ["View", "Zoom 100%"],
+    ["Insert", "Table"],
+    ["Format", "Clear formatting"],
+    ["Tools", "Word count"],
+    ["Help", "Command palette"],
+  ];
+
+  for (const [menuName, entry] of expected) {
+    await page.getByRole("button", { name: menuName, exact: true }).click();
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("button", { name: entry, exact: true })).toBeVisible();
+    // The command palette must not be what opened.
+    await expect(page.locator(".command-palette")).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(menu).toHaveCount(0);
+  }
+});
+
+test("Format menu applies formatting to the document", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "New document" }).click();
+  const editor = page.locator(".prose-editor");
+  await expect(editor).toBeVisible();
+
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+a");
+  await page.keyboard.type("Menu formatted");
+  await page.keyboard.press("ControlOrMeta+a");
+
+  await page.getByRole("button", { name: "Format", exact: true }).click();
+  await page.locator(".menu-popover").getByRole("button", { name: "Italic", exact: true }).click();
+
+  await expect(editor.locator("em")).toContainText("Menu formatted");
+});
+
+test("View menu toggles panels and zoom", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "New document" }).click();
+  await expect(page.locator(".prose-editor")).toBeVisible();
+
+  await expect(page.locator(".right-panel")).not.toBeVisible();
+  await page.getByRole("button", { name: "View", exact: true }).click();
+  await page.locator(".menu-popover").getByRole("button", { name: "Inspector panel", exact: true }).click();
+  await expect(page.locator(".right-panel")).toBeVisible();
+
+  await page.getByRole("button", { name: "View", exact: true }).click();
+  await page.locator(".menu-popover").getByRole("button", { name: "Zoom 50%", exact: true }).click();
+  await expect(page.locator(".page-frame")).toHaveCSS("zoom", "0.5");
 });
 
 test("primary views have no serious automated accessibility violations", async ({ page }) => {

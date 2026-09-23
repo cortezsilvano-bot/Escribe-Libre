@@ -20,7 +20,7 @@ import {
   WidthType,
   type ISectionOptions,
 } from "docx";
-import type { PageSettings } from "@/lib/documents/document-model";
+import { documentRecordSchema, type DocumentRecord, type PageSettings } from "@/lib/schema/document";
 
 type DocxChild = Paragraph | Table;
 
@@ -194,11 +194,10 @@ export async function createDocxBlob({
   content,
   pageSettings,
   title,
-}: {
-  content: JSONContent;
-  pageSettings: PageSettings;
-  title: string;
-}) {
+}: Pick<DocumentRecord, "content" | "pageSettings" | "title">) {
+  ({ content, pageSettings, title } = documentRecordSchema
+    .pick({ content: true, pageSettings: true, title: true })
+    .parse({ content, pageSettings, title }));
   const children = content.content?.flatMap(blockToDocx) ?? [new Paragraph("")];
   const document = new Document({
     creator: "Textdoc",

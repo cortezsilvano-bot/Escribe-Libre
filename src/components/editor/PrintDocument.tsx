@@ -47,7 +47,9 @@ export function PrintDocument({ documentId }: PrintDocumentProps) {
     }
 
     if (editor) {
-      void loadDocument();
+      void loadDocument().catch((error: unknown) => {
+        if (mounted) setError(error instanceof Error ? error.message : "Could not load document.");
+      });
     }
 
     return () => {

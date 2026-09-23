@@ -8,6 +8,7 @@ const eslintConfig = [
       "playwright-report/**",
       "src-tauri/resources/**",
       "src-tauri/target/**",
+      "src-tauri/target-*/**",
       "test-results/**",
       "upgrade/**",
     ],

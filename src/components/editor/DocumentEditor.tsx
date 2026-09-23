@@ -4,7 +4,6 @@ import { EditorContent, useEditor, type JSONContent } from "@tiptap/react";
 import DOMPurify from "dompurify";
 import {
   ArrowLeft,
-  ChevronDown,
   CircleUserRound,
   Download,
   FileInput,
@@ -58,6 +57,7 @@ import {
   type LocalSettings,
 } from "@/lib/settings/local-settings";
 import { EditorRibbon, type PasteMode } from "./EditorRibbon";
+import { MenuBar, type Menu } from "./MenuBar";
 import { EditorSidebar } from "./EditorSidebar";
 import { FloatingSelectionToolbar } from "./FloatingSelectionToolbar";
 import { StatusBar } from "./StatusBar";
@@ -126,7 +126,6 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
   const [toast, setToast] = useState<{ message: string; tone: ToastTone } | null>(null);
   const [editorFont, setEditorFont] = useState("Inter");
   const [pasteMode, setPasteMode] = useState<PasteMode>("keep");
-  const [showFileMenu, setShowFileMenu] = useState(false);
   const [theme, setTheme] = useState<LocalSettings["theme"]>("neon-dark");
   const htmlInputRef = useRef<HTMLInputElement>(null);
   const docxInputRef = useRef<HTMLInputElement>(null);
@@ -404,6 +403,42 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     }
   }
 
+  function insertImage() {
+    if (!editor) {
+      return;
+    }
+
+    const url = window.prompt("Image URL");
+    if (!url?.trim()) {
+      return;
+    }
+    editor.chain().focus().setImage({ src: url.trim(), alt: "" }).run();
+  }
+
+  function insertLink() {
+    if (!editor) {
+      return;
+    }
+
+    const previousUrl = editor.getAttributes("link").href as string | undefined;
+    const url = window.prompt("Link URL", previousUrl ?? "https://");
+    if (url === null) {
+      return;
+    }
+    if (url.trim() === "") {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
+  }
+
+  function insertComment() {
+    const body = window.prompt("Comment");
+    if (body?.trim()) {
+      void handleCreateComment(body.trim());
+    }
+  }
+
   function printDocument() {
     router.push(`/print?doc=${encodeURIComponent(documentId)}`);
   }
@@ -488,6 +523,7 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     }
 
     const restored = await saveDocument({
+      schemaVersion: version.schemaVersion,
       id: version.documentId,
       title: version.title,
       content: version.content,
@@ -611,6 +647,134 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
     return () => window.removeEventListener("keydown", handleShortcut);
   });
 
+  function applyZoom(zoom: number) {
+    commitPageSettings({ ...pageSettings, zoom });
+  }
+
+  const menus: Menu[] = editor
+    ? [
+        {
+          id: "file",
+          label: "File",
+          entries: [
+            { label: "New document", icon: <FilePlus size={15} />, shortcut: "Ctrl N", keyshortcuts: "Control+N", onSelect: () => void handleNewDocument() },
+            { label: "Open .textdoc", icon: <FolderOpen size={15} />, onSelect: () => textdocInputRef.current?.click() },
+            { kind: "separator" },
+            { label: "Import HTML", icon: <FileInput size={15} />, onSelect: () => htmlInputRef.current?.click() },
+            { label: "Import DOCX", icon: <FileText size={15} />, onSelect: () => docxInputRef.current?.click() },
+            { kind: "separator" },
+            { label: "Save .textdoc", icon: <Save size={15} />, shortcut: "Ctrl S", keyshortcuts: "Control+S", onSelect: () => void exportTextdoc() },
+            { label: "Export TXT", icon: <FileText size={15} />, onSelect: exportText },
+            { label: "Export HTML", icon: <Download size={15} />, onSelect: exportHtml },
+            { label: "Export DOCX", icon: <Download size={15} />, onSelect: () => void exportDocx() },
+            { kind: "separator" },
+            { label: "Print", icon: <Printer size={15} />, onSelect: () => window.print() },
+            { label: "Print preview / PDF", icon: <FileText size={15} />, shortcut: "Ctrl P", keyshortcuts: "Control+P", onSelect: printDocument },
+            { kind: "separator" },
+            { label: "Back to documents", icon: <ArrowLeft size={15} />, onSelect: goBackToDashboard },
+          ],
+        },
+        {
+          id: "edit",
+          label: "Edit",
+          entries: [
+            { label: "Undo", shortcut: "Ctrl Z", disabled: !editor.can().undo(), onSelect: () => editor.chain().focus().undo().run() },
+            { label: "Redo", shortcut: "Ctrl Y", disabled: !editor.can().redo(), onSelect: () => editor.chain().focus().redo().run() },
+            { kind: "separator" },
+            { label: "Select all", shortcut: "Ctrl A", onSelect: () => editor.chain().focus().selectAll().run() },
+            { label: "Find and replace", onSelect: () => setRightPanelOpen(true) },
+            { kind: "separator" },
+            { label: "Paste: keep formatting", checked: pasteMode === "keep", onSelect: () => setPasteMode("keep") },
+            { label: "Paste: match document", checked: pasteMode === "match", onSelect: () => setPasteMode("match") },
+            { label: "Paste: plain text", checked: pasteMode === "plain", onSelect: () => setPasteMode("plain") },
+          ],
+        },
+        {
+          id: "view",
+          label: "View",
+          entries: [
+            { label: "Outline panel", checked: leftPanelOpen, onSelect: () => setLeftPanelOpen((open) => !open) },
+            { label: "Inspector panel", checked: rightPanelOpen, onSelect: () => setRightPanelOpen((open) => !open) },
+            { kind: "separator" },
+            { label: "Zoom 50%", checked: pageSettings.zoom === 0.5, onSelect: () => applyZoom(0.5) },
+            { label: "Zoom 75%", checked: pageSettings.zoom === 0.75, onSelect: () => applyZoom(0.75) },
+            { label: "Zoom 100%", checked: pageSettings.zoom === 1, onSelect: () => applyZoom(1) },
+            { label: "Zoom 125%", checked: pageSettings.zoom === 1.25, onSelect: () => applyZoom(1.25) },
+            { label: "Zoom 150%", checked: pageSettings.zoom === 1.5, onSelect: () => applyZoom(1.5) },
+            { kind: "separator" },
+            { label: theme === "neon-dark" ? "Light theme" : "Dark theme", onSelect: toggleTheme },
+            { label: "Print preview", onSelect: printDocument },
+          ],
+        },
+        {
+          id: "insert",
+          label: "Insert",
+          entries: [
+            { label: "Image from URL", onSelect: insertImage },
+            { label: "Table", onSelect: () => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+            { label: "Link", onSelect: insertLink },
+            { kind: "separator" },
+            { label: "Page break", shortcut: "Ctrl Alt B", keyshortcuts: "Control+Alt+B", onSelect: () => editor.chain().focus().setPageBreak().run() },
+            { label: "Horizontal rule", onSelect: () => editor.chain().focus().setHorizontalRule().run() },
+            { kind: "separator" },
+            { label: "Comment on selection", onSelect: insertComment },
+          ],
+        },
+        {
+          id: "format",
+          label: "Format",
+          entries: [
+            { label: "Bold", shortcut: "Ctrl B", checked: editor.isActive("bold"), onSelect: () => editor.chain().focus().toggleBold().run() },
+            { label: "Italic", shortcut: "Ctrl I", checked: editor.isActive("italic"), onSelect: () => editor.chain().focus().toggleItalic().run() },
+            { label: "Underline", shortcut: "Ctrl U", checked: editor.isActive("underline"), onSelect: () => editor.chain().focus().toggleUnderline().run() },
+            { label: "Strikethrough", checked: editor.isActive("strike"), onSelect: () => editor.chain().focus().toggleStrike().run() },
+            { kind: "separator" },
+            { label: "Heading 1", checked: editor.isActive("heading", { level: 1 }), onSelect: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
+            { label: "Heading 2", checked: editor.isActive("heading", { level: 2 }), onSelect: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
+            { label: "Heading 3", checked: editor.isActive("heading", { level: 3 }), onSelect: () => editor.chain().focus().toggleHeading({ level: 3 }).run() },
+            { label: "Paragraph", checked: editor.isActive("paragraph"), onSelect: () => editor.chain().focus().setParagraph().run() },
+            { kind: "separator" },
+            { label: "Align left", checked: editor.isActive({ textAlign: "left" }), onSelect: () => editor.chain().focus().setTextAlign("left").run() },
+            { label: "Align center", checked: editor.isActive({ textAlign: "center" }), onSelect: () => editor.chain().focus().setTextAlign("center").run() },
+            { label: "Align right", checked: editor.isActive({ textAlign: "right" }), onSelect: () => editor.chain().focus().setTextAlign("right").run() },
+            { label: "Justify", checked: editor.isActive({ textAlign: "justify" }), onSelect: () => editor.chain().focus().setTextAlign("justify").run() },
+            { kind: "separator" },
+            { label: "Bullet list", checked: editor.isActive("bulletList"), onSelect: () => editor.chain().focus().toggleBulletList().run() },
+            { label: "Numbered list", checked: editor.isActive("orderedList"), onSelect: () => editor.chain().focus().toggleOrderedList().run() },
+            { label: "Block quote", checked: editor.isActive("blockquote"), onSelect: () => editor.chain().focus().toggleBlockquote().run() },
+            { kind: "separator" },
+            { label: "Clear formatting", onSelect: () => editor.chain().focus().unsetAllMarks().clearNodes().run() },
+          ],
+        },
+        {
+          id: "tools",
+          label: "Tools",
+          entries: [
+            { label: "Word count", onSelect: () => showToast(wordCount.toLocaleString() + " words, " + characterCount.toLocaleString() + " characters.", "info") },
+            { kind: "separator" },
+            { label: "Find and replace", onSelect: () => setRightPanelOpen(true) },
+            { label: "Save version snapshot", onSelect: () => void handleCreateVersion() },
+            { label: "Version history", onSelect: () => setRightPanelOpen(true) },
+            { kind: "separator" },
+            { label: "Page setup", onSelect: () => setRightPanelOpen(true) },
+          ],
+        },
+        {
+          id: "help",
+          label: "Help",
+          entries: [
+            { label: "Command palette", shortcut: "Ctrl K", keyshortcuts: "Control+K", onSelect: () => setCommandPaletteOpen(true) },
+            { kind: "separator" },
+            { label: "New document", shortcut: "Ctrl N", disabled: true, onSelect: () => {} },
+            { label: "Save .textdoc", shortcut: "Ctrl S", disabled: true, onSelect: () => {} },
+            { label: "Export plain text", shortcut: "Ctrl Shift S", disabled: true, onSelect: () => {} },
+            { label: "Print preview", shortcut: "Ctrl P", disabled: true, onSelect: () => {} },
+            { label: "Insert page break", shortcut: "Ctrl Alt B", disabled: true, onSelect: () => {} },
+          ],
+        },
+      ]
+    : [];
+
   if (error) {
     return (
       <main className="editor-error">
@@ -659,83 +823,8 @@ export function DocumentEditor({ documentId }: DocumentEditorProps) {
             </div>
           </div>
 
-          <nav aria-label="Document menu" className="upgrade-menu-row">
-            <div className="file-menu-wrap">
-              <button className="menu-link" onClick={() => setShowFileMenu((open) => !open)} type="button">
-                File
-              </button>
-              {showFileMenu ? (
-                <div className="file-menu-popover">
-                  <button aria-keyshortcuts="Control+N" onClick={() => { void handleNewDocument(); setShowFileMenu(false); }} type="button">
-                    <FilePlus size={15} />
-                    New document
-                    <kbd aria-hidden="true">Ctrl N</kbd>
-                  </button>
-                  <button onClick={() => { textdocInputRef.current?.click(); setShowFileMenu(false); }} type="button">
-                    <FolderOpen size={15} />
-                    Open .textdoc
-                  </button>
-                  <hr />
-                  <button onClick={() => { htmlInputRef.current?.click(); setShowFileMenu(false); }} type="button">
-                    <FileInput size={15} />
-                    Import HTML
-                  </button>
-                  <button onClick={() => { docxInputRef.current?.click(); setShowFileMenu(false); }} type="button">
-                    <FileText size={15} />
-                    Import DOCX
-                  </button>
-                  <hr />
-                  <button aria-keyshortcuts="Control+S" onClick={() => { void exportTextdoc(); setShowFileMenu(false); }} type="button">
-                    <Save size={15} />
-                    Save .textdoc
-                    <kbd aria-hidden="true">Ctrl S</kbd>
-                  </button>
-                  <button onClick={() => { exportText(); setShowFileMenu(false); }} type="button">
-                    <FileText size={15} />
-                    Export TXT
-                  </button>
-                  <button onClick={() => { exportHtml(); setShowFileMenu(false); }} type="button">
-                    <Download size={15} />
-                    Export HTML
-                  </button>
-                  <button onClick={() => { void exportDocx(); setShowFileMenu(false); }} type="button">
-                    <Download size={15} />
-                    Export DOCX
-                  </button>
-                  <hr />
-                  <button onClick={() => { setShowFileMenu(false); window.print(); }} type="button">
-                    <Printer size={15} />
-                    Print
-                  </button>
-                  <button aria-keyshortcuts="Control+P" onClick={() => { printDocument(); setShowFileMenu(false); }} type="button">
-                    <FileText size={15} />
-                    Print preview / PDF
-                    <kbd aria-hidden="true">Ctrl P</kbd>
-                  </button>
-                  <hr />
-                  <button onClick={() => { goBackToDashboard(); setShowFileMenu(false); }} type="button">
-                    <ArrowLeft size={15} />
-                    Back to documents
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            {["Edit", "View"].map((item) => (
-              <button className="menu-link" key={item} onClick={() => setCommandPaletteOpen(true)} type="button">
-                {item}
-              </button>
-            ))}
-            <button className="menu-link active" type="button">Insert</button>
-            {["Format", "Tools", "Extensions"].map((item) => (
-              <button className="menu-link" key={item} onClick={() => setCommandPaletteOpen(true)} type="button">
-                {item}
-              </button>
-            ))}
-            <button className="menu-link help-link" onClick={() => setCommandPaletteOpen(true)} type="button">
-              Help
-              <ChevronDown size={13} />
-            </button>
-          </nav>
+          <MenuBar menus={menus} />
+
           <input
             accept={textdocAccept}
             hidden

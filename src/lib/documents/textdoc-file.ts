@@ -48,7 +48,7 @@ export function downloadTextdocFile(record: DocumentRecord) {
   const payload: TextdocFilePayload = {
     format: "textdoc.document",
     formatVersion: 1,
-    document: record,
+    document: documentRecordSchema.parse(record),
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -62,7 +62,7 @@ export function downloadTextdocBackup(documents: DocumentRecord[]) {
     format: "textdoc.backup",
     formatVersion: 1,
     exportedAt: new Date().toISOString(),
-    documents,
+    documents: documents.map((record) => documentRecordSchema.parse(record)),
   };
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], {
